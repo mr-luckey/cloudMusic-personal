@@ -543,13 +543,17 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  PersistentTabController _controller = PersistentTabController(initialIndex: 0);
+  PersistentTabController _controller =
+      PersistentTabController(initialIndex: 0);
   final ValueNotifier<int> _selectedIndex = ValueNotifier<int>(0);
   final PageController _pageController = PageController();
   String? appVersion;
-  String name = Hive.box('settings').get('name', defaultValue: 'Guest') as String;
-  bool checkUpdate = Hive.box('settings').get('checkUpdate', defaultValue: true) as bool;
-  bool autoBackup = Hive.box('settings').get('autoBackup', defaultValue: false) as bool;
+  String name =
+      Hive.box('settings').get('name', defaultValue: 'Guest') as String;
+  bool checkUpdate =
+      Hive.box('settings').get('checkUpdate', defaultValue: true) as bool;
+  bool autoBackup =
+      Hive.box('settings').get('autoBackup', defaultValue: false) as bool;
   List sectionsToShow = Hive.box('settings').get(
     'sectionsToShow',
     defaultValue: ['Home', 'Top Charts', 'YouTube', 'Library'],
@@ -592,11 +596,13 @@ class _HomePageState extends State<HomePage> {
                 label: AppLocalizations.of(context)!.update,
                 onPressed: () async {
                   if (Platform.isAndroid) {
-                    List? abis = await Hive.box('settings').get('supportedAbis') as List?;
+                    List? abis = await Hive.box('settings').get('supportedAbis')
+                        as List?;
 
                     if (abis == null) {
                       final DeviceInfoPlugin deviceInfo = DeviceInfoPlugin();
-                      final AndroidDeviceInfo androidDeviceInfo = await deviceInfo.androidInfo;
+                      final AndroidDeviceInfo androidDeviceInfo =
+                          await deviceInfo.androidInfo;
                       abis = androidDeviceInfo.supportedAbis;
                       await Hive.box('settings').put('supportedAbis', abis);
                     }
@@ -662,14 +668,14 @@ class _HomePageState extends State<HomePage> {
             fileName: 'CloudSpot_AutoBackup',
             showDialog: false,
           ).then(
-                (value) => {
+            (value) => {
               if (value.contains('No such file or directory'))
                 {
                   ExtStorageProvider.getExtStorage(
                     dirName: 'CloudSpot/Backups',
                     writeAccess: true,
                   ).then(
-                        (value) {
+                    (value) {
                       Hive.box('settings').put('autoBackPath', value);
                       createBackup(
                         context,
@@ -705,7 +711,7 @@ class _HomePageState extends State<HomePage> {
   List<Widget> _buildScreens() {
     return [
       const HomeScreen(),
-      TopCharts(pageController: _pageController),
+      // TopCharts(pageController: _pageController),
       const YouTube(),
       const LibraryPage(),
       NewSettingsPage(callback: callback),
@@ -716,32 +722,32 @@ class _HomePageState extends State<HomePage> {
     return [
       PersistentBottomNavBarItem(
         icon: Icon(Icons.home),
-        title: ("Home"),
-        activeColorPrimary: Colors.blue,
+        title: AppLocalizations.of(context)!.home,
+        activeColorPrimary: Theme.of(context).colorScheme.secondary,
         inactiveColorPrimary: Colors.grey,
       ),
-      PersistentBottomNavBarItem(
-        icon: Icon(Icons.bar_chart),
-        title: ("Top Charts"),
-        activeColorPrimary: Colors.blue,
-        inactiveColorPrimary: Colors.grey,
-      ),
+      // PersistentBottomNavBarItem(
+      //   icon: Icon(Icons.bar_chart),
+      //   title: ("Top Charts"),
+      //   activeColorPrimary: Colors.blue,
+      //   inactiveColorPrimary: Colors.grey,
+      // ),
       PersistentBottomNavBarItem(
         icon: Icon(Icons.video_library),
-        title: ("YouTube"),
-        activeColorPrimary: Colors.blue,
+        title: AppLocalizations.of(context)!.youTube,
+        activeColorPrimary: Theme.of(context).colorScheme.secondary,
         inactiveColorPrimary: Colors.grey,
       ),
       PersistentBottomNavBarItem(
         icon: Icon(Icons.library_music),
-        title: ("Library"),
-        activeColorPrimary: Colors.blue,
+        title: AppLocalizations.of(context)!.library,
+        activeColorPrimary: Theme.of(context).colorScheme.secondary,
         inactiveColorPrimary: Colors.grey,
       ),
       PersistentBottomNavBarItem(
         icon: Icon(Icons.settings),
-        title: ("Settings"),
-        activeColorPrimary: Colors.blue,
+        title: AppLocalizations.of(context)!.settings,
+        activeColorPrimary: Theme.of(context).colorScheme.secondary,
         inactiveColorPrimary: Colors.grey,
       ),
     ];
@@ -772,12 +778,33 @@ class _HomePageState extends State<HomePage> {
                   return NavigationRail(
                     minWidth: 70.0,
                     groupAlignment: 0.0,
-                    backgroundColor: Theme.of(context).cardColor,
+                    backgroundColor:
+//                         // Colors.transparent,
+                        Theme.of(context).cardColor,
                     selectedIndex: indexValue,
                     onDestinationSelected: (int index) {
                       onItemTapped(index);
                     },
-                    labelType: NavigationRailLabelType.all,
+                    labelType: screenWidth > 1050
+                        ? NavigationRailLabelType.selected
+                        : NavigationRailLabelType.none,
+                    selectedLabelTextStyle: TextStyle(
+                      color: Theme.of(context).colorScheme.secondary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    unselectedLabelTextStyle: TextStyle(
+                      color: Theme.of(context).iconTheme.color,
+                    ),
+                    selectedIconTheme: Theme.of(context).iconTheme.copyWith(
+                          color: Theme.of(context).colorScheme.secondary,
+                        ),
+                    unselectedIconTheme: Theme.of(context).iconTheme,
+                    useIndicator: screenWidth < 1050,
+                    indicatorColor: Theme.of(context)
+                        .colorScheme
+                        .secondary
+                        .withOpacity(0.2),
+                    // labelType: NavigationRailLabelType.all,
                     leading: Column(
                       children: [
                         const SizedBox(
@@ -795,7 +822,8 @@ class _HomePageState extends State<HomePage> {
                             children: [
                               CircleAvatar(
                                 radius: 25,
-                                backgroundImage: AssetImage('assets/ic_launcher.png'),
+                                backgroundImage:
+                                    AssetImage('assets/ic_launcher.png'),
                               ),
                               const SizedBox(
                                 height: 5,
@@ -805,40 +833,42 @@ class _HomePageState extends State<HomePage> {
                         ),
                       ],
                     ),
-                    selectedIconTheme: IconThemeData(
-                      color: Theme.of(context).colorScheme.secondary,
-                      size: 40,
-                    ),
-                    unselectedIconTheme: const IconThemeData(
-                      color: Colors.grey,
-                      size: 30,
-                    ),
-                    selectedLabelTextStyle: TextStyle(
-                      color: Theme.of(context).colorScheme.secondary,
-                    ),
-                    unselectedLabelTextStyle: const TextStyle(
-                      color: Colors.grey,
-                    ),
+                    // selectedIconTheme: IconThemeData(
+                    //   color: Theme.of(context).colorScheme.secondary,
+                    //   size: 40,
+                    // ),
+                    // unselectedIconTheme: const IconThemeData(
+                    //   color: Colors.grey,
+                    //   size: 30,
+                    // ),
+                    // selectedLabelTextStyle: TextStyle(
+                    //   color: Theme.of(context).colorScheme.secondary,
+                    // ),
+                    // unselectedLabelTextStyle: const TextStyle(
+                    //   color: Colors.grey,
+                    // ),
                     destinations: [
                       NavigationRailDestination(
                         icon: Icon(Icons.home_rounded),
-                        label: Text('Home'),
+                        label: Text(AppLocalizations.of(context)!.home),
                       ),
-                      NavigationRailDestination(
-                        icon: Icon(Icons.bar_chart_rounded),
-                        label: Text('Top Charts'),
-                      ),
+                      // NavigationRailDestination(
+                      //   icon: Icon(Icons.bar_chart_rounded),
+                      //   label: Text('Top Charts'),
+                      // ),
                       NavigationRailDestination(
                         icon: Icon(Icons.video_library_rounded),
-                        label: Text('YouTube'),
+                        label: Text(AppLocalizations.of(context)!.youTube),
                       ),
                       NavigationRailDestination(
                         icon: Icon(Icons.my_library_music_rounded),
-                        label: Text('Library'),
+                        label: Text(AppLocalizations.of(context)!.library),
                       ),
                       NavigationRailDestination(
                         icon: Icon(Icons.settings_rounded),
-                        label: Text('Settings'),
+                        label: Text(
+                          AppLocalizations.of(context)!.settings,
+                        ),
                       ),
                     ],
                   );
@@ -853,7 +883,7 @@ class _HomePageState extends State<HomePage> {
                       controller: _controller,
                       screens: _buildScreens(),
                       items: _navBarsItems(context),
-                      confineToSafeArea: true,
+                      // confineToSafeArea: true,
                       backgroundColor: Theme.of(context).cardColor,
                       handleAndroidBackButtonPress: true,
                       resizeToAvoidBottomInset: false,
@@ -862,7 +892,7 @@ class _HomePageState extends State<HomePage> {
                       // hideNavigationBarWhenKeyboardShows: true,
                       decoration: NavBarDecoration(
                         borderRadius: BorderRadius.circular(10.0),
-                        colorBehindNavBar: Colors.transparent,
+                        // colorBehindNavBar: Colors.transparent,
                       ),
                       // popAllScreensOnTapOfSelectedTab: true,
                       // itemAnimationProperties: ItemAnimationProperties(
@@ -874,7 +904,7 @@ class _HomePageState extends State<HomePage> {
                       //   curve: Curves.ease,
                       //   duration: Duration(milliseconds: 200),
                       // ),
-                      navBarStyle: NavBarStyle.style6,
+                      navBarStyle: NavBarStyle.style3,
                     ),
                     Align(
                       alignment: Alignment.bottomLeft,
