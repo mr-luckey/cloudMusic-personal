@@ -17,6 +17,7 @@ Widget initialFuntion() {
   return Hive.box('settings').get('userId') != null ? HomePage() : AuthScreen();
 }
 
+
 final Map<String, Widget Function(BuildContext)> namedRoutes = {
   '/': (context) => initialFuntion(),
   '/pref': (context) => const PrefScreen(),
