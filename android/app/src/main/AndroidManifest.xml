@@ -31,7 +31,8 @@ xmlns:android="http://schemas.android.com/apk/res/android"
             android:resource="@xml/automotive_app_desc" />
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
-            android:value="ca-app-pub-5561438827097019~5092563432"/>
+            android:value="ca-app-pub-5561438827097019~5092563432"
+            />
         
         <receiver
             android:name=".BlackHoleMusicWidget"

@@ -42,14 +42,18 @@ class _LibraryPageState extends State<LibraryPage> {
           title: AppLocalizations.of(context)!.nowPlaying,
           icon: Icons.queue_music_rounded,
           onTap: () {
-            Navigator.pushNamed(context, '/nowplaying');
+            Navigator.of(context, rootNavigator: true).pushNamed('/nowplaying');
+
+            // Navigator.pushNamed(context, '/nowplaying');
           },
         ),
         LibraryTile(
           title: AppLocalizations.of(context)!.lastSession,
           icon: Icons.history_rounded,
           onTap: () {
-            Navigator.pushNamed(context, '/recent');
+            Navigator.of(context, rootNavigator: true).pushNamed('/recent');
+
+            // Navigator.pushNamed(context, '/recent');
           },
         ),
         LibraryTile(
@@ -74,12 +78,13 @@ class _LibraryPageState extends State<LibraryPage> {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) =>
-                    (Platform.isWindows || Platform.isLinux || Platform.isMacOS)
-                        ? const DownloadedSongsDesktop()
-                        : const DownloadedSongs(
-                            showPlaylists: true,
-                          ),
+                builder: (context) => (Platform.isWindows ||
+                        Platform.isLinux ||
+                        Platform.isAndroid)
+                    ? const DownloadedSongsDesktop()
+                    : const DownloadedSongs(
+                        showPlaylists: true,
+                      ),
               ),
             );
           },
@@ -88,21 +93,26 @@ class _LibraryPageState extends State<LibraryPage> {
           title: AppLocalizations.of(context)!.downs,
           icon: Icons.download_done_rounded,
           onTap: () {
-            Navigator.pushNamed(context, '/downloads');
+            Navigator.of(context, rootNavigator: true).pushNamed('/downloads');
+            // Navigator.pushNamed(context, '/downloads');
           },
         ),
         LibraryTile(
           title: AppLocalizations.of(context)!.playlists,
           icon: Icons.playlist_play_rounded,
           onTap: () {
-            Navigator.pushNamed(context, '/playlists');
+            Navigator.of(context, rootNavigator: true).pushNamed('/playlists');
+
+            // Navigator.pushNamed(context, '/playlists');
           },
         ),
         LibraryTile(
           title: AppLocalizations.of(context)!.stats,
           icon: Icons.auto_graph_rounded,
           onTap: () {
-            Navigator.pushNamed(context, '/stats');
+            Navigator.of(context, rootNavigator: true).pushNamed('/stats');
+
+            // Navigator.pushNamed(context, '/stats');
           },
         ),
       ],

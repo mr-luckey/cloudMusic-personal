@@ -24,14 +24,14 @@ dependencies:
   connectivity_plus: ^5.0.2
   cupertino_icons: ^1.0.6
   dart_des: ^1.0.2
-  device_info_plus: ^9.1.1
+  device_info_plus: ^10.1.1
   # ffmpeg_kit_flutter_audio: ^6.0.3
 #  fading_edge_scrollview: ^3.0.0
-  file_picker: ^6.1.1
+  file_picker: ^8.0.6
   flip_card: ^0.7.0
   flutter:
     sdk: flutter
-  flutter_archive: ^6.0.0
+  flutter_archive: ^6.0.3
   flutter_displaymode: ^0.6.0
   # flutter_downloader: ^1.7.1
   flutter_localizations:
@@ -41,7 +41,7 @@ dependencies:
     #   url: https://github.com/Sangwan5688/flutter_lyric
     #   ref: 8cea262
   get: ^4.6.6
-  get_it: ^7.6.7
+  get_it: ^7.7.0
   # google_mobile_ads: ^4.0.0
 
   google_mobile_ads: ^4.0.0
@@ -59,8 +59,8 @@ dependencies:
   metadata_god: ^0.5.2+1
   native_ads_flutter: ^1.0.7
   on_audio_query: ^2.9.0
-  package_info_plus: ^5.0.1
-  palette_generator: ^0.3.3+3
+  package_info_plus: ^8.0.1
+  palette_generator: ^0.3.3+4
   path_provider: ^2.1.2
   permission_handler: ^11.3.1
   persistent_bottom_nav_bar: ^5.0.2

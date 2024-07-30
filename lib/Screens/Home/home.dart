@@ -556,7 +556,7 @@ class _HomePageState extends State<HomePage> {
       Hive.box('settings').get('autoBackup', defaultValue: false) as bool;
   List sectionsToShow = Hive.box('settings').get(
     'sectionsToShow',
-    defaultValue: ['Home', 'Top Charts', 'YouTube', 'Library'],
+    defaultValue: ['Home', 'YouTube', 'Library', 'Settings'],
   ) as List;
   DateTime? backButtonPressTime;
   final bool useDense = Hive.box('settings').get(
@@ -567,7 +567,7 @@ class _HomePageState extends State<HomePage> {
   void callback() {
     sectionsToShow = Hive.box('settings').get(
       'sectionsToShow',
-      defaultValue: ['Home', 'Top Charts', 'YouTube', 'Library'],
+      defaultValue: ['Home', 'YouTube', 'Library', 'Settings'],
     ) as List;
     onItemTapped(0);
     setState(() {});
