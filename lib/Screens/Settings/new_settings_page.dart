@@ -53,12 +53,12 @@ class _NewSettingsPageState extends State<NewSettingsPage>
           elevation: 0,
           backgroundColor: Colors.transparent,
           centerTitle: true,
-          leading: sectionsToShow.contains('Settings')
-              ? homeDrawer(
-                  context: context,
-                  padding: const EdgeInsets.only(left: 15.0),
-                )
-              : null,
+          // leading: sectionsToShow.contains('Settings')
+          //     ? homeDrawer(
+          //         context: context,
+          //         padding: const EdgeInsets.only(left: 15.0),
+          //       )
+          //     : null,
           title: Text(
             AppLocalizations.of(context)!.settings,
             style: TextStyle(

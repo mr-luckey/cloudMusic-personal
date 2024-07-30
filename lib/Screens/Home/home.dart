@@ -771,6 +771,7 @@ class _HomePageState extends State<HomePage> {
         drawerEnableOpenDragGesture: false,
         body: Row(
           children: [
+            // miniplayer,
             if (rotated)
               ValueListenableBuilder(
                 valueListenable: _selectedIndex,
@@ -778,9 +779,7 @@ class _HomePageState extends State<HomePage> {
                   return NavigationRail(
                     minWidth: 70.0,
                     groupAlignment: 0.0,
-                    backgroundColor:
-//                         // Colors.transparent,
-                        Theme.of(context).cardColor,
+                    backgroundColor: Theme.of(context).cardColor,
                     selectedIndex: indexValue,
                     onDestinationSelected: (int index) {
                       onItemTapped(index);
@@ -904,13 +903,26 @@ class _HomePageState extends State<HomePage> {
                       //   curve: Curves.ease,
                       //   duration: Duration(milliseconds: 200),
                       // ),
-                      navBarStyle: NavBarStyle.style3,
+                      navBarStyle: NavBarStyle.style9,
                     ),
                     Align(
                       alignment: Alignment.bottomLeft,
-                      child: SizedBox(
-                        height: useDense ? 65.0 : 70.0,
-                        child: miniplayer,
+                      child: Padding(
+                        padding: const EdgeInsets.only(
+                            bottom: 51, left: 5, right: 5),
+                        child: Card(
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10.0),
+                          ),
+                          // color: Theme.of(context).primaryColor,
+                          elevation: 1,
+                          // decoration: BoxDecoration(
+                          //   border: Border.all(color: Colors.white),
+                          // ),
+                          // height: 80.0,
+                          // height: useDense ? 45.0 : 40.0,
+                          child: miniplayer,
+                        ),
                       ),
                     ),
                   ],

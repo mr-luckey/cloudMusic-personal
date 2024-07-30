@@ -36,7 +36,7 @@ class _LibraryPageState extends State<LibraryPage> {
           backgroundColor: Colors.transparent,
           elevation: 0,
           automaticallyImplyLeading: false,
-          leading: rotated ? null : homeDrawer(context: context),
+          // leading: rotated ? null : homeDrawer(context: context),
         ),
         LibraryTile(
           title: AppLocalizations.of(context)!.nowPlaying,

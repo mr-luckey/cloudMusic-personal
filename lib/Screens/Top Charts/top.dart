@@ -91,7 +91,7 @@ class _TopChartsState extends State<TopCharts>
           backgroundColor: Colors.transparent,
           elevation: 0,
           automaticallyImplyLeading: false,
-          leading: rotated ? null : homeDrawer(context: context),
+          // leading: rotated ? null : homeDrawer(context: context),
         ),
         body: NotificationListener(
           onNotification: (overscroll) {

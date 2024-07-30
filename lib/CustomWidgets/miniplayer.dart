@@ -85,29 +85,30 @@ class _MiniPlayerState extends State<MiniPlayer> {
                   //   horizontal: 2.0,
                   //   vertical: 0.0,
                   // ),
-                  elevation: 0,
+                  elevation: 5,
                   child: SizedBox(
+                    height: 76,
                     child: GradientContainer(
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           //FIXME: MINI player fixes needed cominteed by naseer ahmed
-                          // miniplayerTile(
-                          //   context: context,
-                          //   preferredMiniButtons: preferredMiniButtons,
-                          //   useDense: useDense,
-                          //   title: mediaItem?.title ?? '',
-                          //   subtitle: mediaItem?.artist ?? '',
-                          //   imagePath: (isLocal
-                          //           ? mediaItem?.artUri?.toFilePath()
-                          //           : mediaItem?.artUri?.toString()) ??
-                          //       '',
-                          //   isLocalImage: isLocal,
-                          //   isDummy: mediaItem == null,
-                          // ),
-                          // positionSlider(
-                          //   mediaItem?.duration?.inSeconds.toDouble(),
-                          // ),
+                          miniplayerTile(
+                            context: context,
+                            preferredMiniButtons: preferredMiniButtons,
+                            useDense: useDense,
+                            title: mediaItem?.title ?? '',
+                            subtitle: mediaItem?.artist ?? '',
+                            imagePath: (isLocal
+                                    ? mediaItem?.artUri?.toFilePath()
+                                    : mediaItem?.artUri?.toString()) ??
+                                '',
+                            isLocalImage: isLocal,
+                            isDummy: mediaItem == null,
+                          ),
+                          positionSlider(
+                            mediaItem?.duration?.inSeconds.toDouble(),
+                          ),
                         ],
                       ),
                     ),
@@ -132,6 +133,7 @@ class _MiniPlayerState extends State<MiniPlayer> {
     bool isDummy = false,
   }) {
     return ListTile(
+      // tileColor: const Color.fromARGB(255, 105, 59, 255),
       dense: useDense,
       onTap: isDummy
           ? null
