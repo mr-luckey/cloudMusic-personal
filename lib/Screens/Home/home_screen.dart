@@ -52,7 +52,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ) {
               return <Widget>[
                 SliverAppBar(
-                  expandedHeight: 135,
+                  expandedHeight: 120,
                   backgroundColor: Colors.transparent,
                   elevation: 0,
                   // pinned: true,
@@ -90,7 +90,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             mainAxisSize: MainAxisSize.min,
                             children: <Widget>[
                               const SizedBox(
-                                height: 60,
+                                height: 40,
                               ),
                               Row(
                                 children: [
@@ -161,13 +161,14 @@ class _HomeScreenState extends State<HomeScreen> {
                     },
                   ),
                 ),
+
                 SliverAppBar(
                   automaticallyImplyLeading: false,
                   pinned: true,
                   backgroundColor: Colors.transparent,
                   elevation: 0,
                   stretch: true,
-                  toolbarHeight: 65,
+                  toolbarHeight: 50,
                   title: Align(
                     alignment: Alignment.centerRight,
                     child: AnimatedBuilder(
@@ -342,11 +343,11 @@ class _HomeScreenState extends State<HomeScreen> {
             },
             body: SaavnHomePage(),
           ),
-          if (!rotated)
-            homeDrawer(
-              context: context,
-              padding: const EdgeInsets.only(top: 8.0, left: 4.0),
-            ),
+          // if (!rotated)
+          //   homeDrawer(
+          //     context: context,
+          //     padding: const EdgeInsets.only(top: 8.0, left: 4.0),
+          //   ),
         ],
       ),
     );

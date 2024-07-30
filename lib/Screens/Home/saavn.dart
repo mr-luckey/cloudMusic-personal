@@ -453,7 +453,8 @@ class _SaavnHomePageState extends State<SaavnHomePage>
                               ),
                               GestureDetector(
                                 child: Icon(
-                                  Icons.block_rounded,
+                                  //FIXME: Removal of
+                                  Icons.close,
                                   color: Theme.of(context).disabledColor,
                                   size: 18,
                                 ),

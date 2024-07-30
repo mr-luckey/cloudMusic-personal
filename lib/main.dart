@@ -12,6 +12,7 @@ import 'package:blackhole/Screens/Home/home_screen.dart';
 import 'package:blackhole/Screens/Player/audioplayer.dart';
 import 'package:blackhole/constants/constants.dart';
 import 'package:blackhole/constants/languagecodes.dart';
+
 import 'package:blackhole/providers/audio_service_provider.dart';
 import 'package:blackhole/theme/app_theme.dart';
 import 'package:flutter/material.dart';
@@ -193,7 +194,6 @@ class _MyAppState extends State<MyApp> {
       });
     }
   }
-
 
   void setLocale(Locale value) {
     setState(() {
