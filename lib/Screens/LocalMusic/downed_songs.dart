@@ -1248,28 +1248,6 @@ class _SongsTabState extends State<SongsTab>
                                   ],
                                 ),
                               ),
-                            // PopupMenuItem(
-                            //       value: 0,
-                            //       child: Row(
-                            //         children: const [
-                            //           Icon(Icons.edit_rounded),
-                            //           const SizedBox(width: 10.0),
-                            //           Text('Rename'),
-                            //         ],
-                            //       ),
-                            //     ),
-                            //     PopupMenuItem(
-                            //       value: 1,
-                            //       child: Row(
-                            //         children: const [
-                            //           Icon(
-                            //               // CupertinoIcons.tag
-                            //               Icons.local_offer_rounded),
-                            //           const SizedBox(width: 10.0),
-                            //           Text('Edit Tags'),
-                            //         ],
-                            //       ),
-                            //     ),
                             PopupMenuItem(
                               value: -1,
                               child: Row(

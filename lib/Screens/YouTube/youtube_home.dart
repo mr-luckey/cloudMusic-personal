@@ -1,5 +1,9 @@
 // Coded by Naseer Ahmed
 
+// import 'dart:nativewrappers/_internal/vm/lib/math_patch.dart';
+
+import 'dart:math';
+
 import 'package:blackhole/CustomWidgets/drawer.dart';
 import 'package:blackhole/CustomWidgets/on_hover.dart';
 import 'package:blackhole/G-Ads.dart/banner-ads.dart';
@@ -9,6 +13,7 @@ import 'package:blackhole/Screens/YouTube/youtube_playlist.dart';
 import 'package:blackhole/Services/youtube_services.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:carousel_slider/carousel_slider.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:hive/hive.dart';
@@ -26,6 +31,8 @@ class YouTube extends StatefulWidget {
 
 class _YouTubeState extends State<YouTube>
     with AutomaticKeepAliveClientMixin<YouTube> {
+  final ScrollController _scrollController = ScrollController();
+
   // List ytSearch =
   // Hive.box('settings').get('ytSearch', defaultValue: []) as List;
   // bool showHistory =
@@ -90,7 +97,23 @@ class _YouTubeState extends State<YouTube>
                 child: CircularProgressIndicator(),
               )
             else
-              SaavnHomePage(),
+              Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.music_note,
+                      size: 100,
+                      color: Colors.white54,
+                    ),
+                    Text(
+                      'Serch songs on YouTube & YT Music',
+                      style: TextStyle(color: Colors.white54, fontSize: 20),
+                    )
+                  ],
+                ),
+              ),
+            // SaavnHomePage(),
             // SingleChildScrollView(
             //   physics: const BouncingScrollPhysics(),
             //   padding: const EdgeInsets.fromLTRB(10, 70, 10, 0),
@@ -430,68 +453,231 @@ class _YouTubeState extends State<YouTube>
             //     ],
             //   ),
             // ),
+            SliverAppBar(
+              automaticallyImplyLeading: false,
+              pinned: true,
+              backgroundColor: Colors.transparent,
+              elevation: 0,
+              stretch: true,
+              toolbarHeight: 50,
+              title: Align(
+                alignment: Alignment.centerRight,
+                child: AnimatedBuilder(
+                  animation: _scrollController,
+                  builder: (context, child) {
+                    final bool shouldShowAppBar =
+                        _scrollController.hasClients &&
+                            _scrollController.offset > kToolbarHeight;
+                    final double appBarHeight = shouldShowAppBar
+                        ? 0.0 // Hide the app bar when scrolling down
+                        : max(
+                            MediaQuery.of(context).size.width -
+                                _scrollController.offset.roundToDouble(),
+                            MediaQuery.of(context).size.width -
+                                (rotated
+                                    ? 0
+                                    : 75)); // Show and adjust height when scrolling up
+                    final double iconOpacity = shouldShowAppBar
+                        ? 0.0
+                        : 1.0; // Hide the icon when scrolling up
 
-            GestureDetector(
-              child: Container(
-                width: MediaQuery.sizeOf(context).width,
-                height: 55.0,
-                padding: const EdgeInsets.all(5.0),
-                margin:
-                    const EdgeInsets.symmetric(horizontal: 15.0, vertical: 5.0),
-                // margin: EdgeInsets.zero,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(
-                    10.0,
-                  ),
-                  color: Theme.of(context).primaryColor,
-                  boxShadow: const [
-                    BoxShadow(
-                      color: Colors.white60,
-                      blurRadius: 5.0,
-                      offset: Offset(1.5, 1.5),
-                      // shadow direction: bottom right
-                    ),
-                  ],
-                ),
-                child: Row(
-                  children: [
-                    SizedBox(
-                      width: 10,
-                    ),
-                    Icon(Icons.search),
-                    // homeDrawer(context: context),
-                    const SizedBox(
-                      width: 15.0,
-                    ),
-                    Text(
-                      AppLocalizations.of(
-                        context,
-                      )!
-                          .searchYt,
-                      style: TextStyle(
-                        fontSize: 20.0,
-                        color: Theme.of(context).textTheme.bodySmall!.color,
-                        fontWeight: FontWeight.normal,
+                    return //// The above code is a commented-out section of Dart code that seems to
+                        /// be defining a GestureDetector widget with a Container child. The
+                        /// Container has various properties set such as width, height, padding,
+                        /// margin, decoration, and child (a Row widget with some children). The
+                        /// GestureDetector is set to navigate to a SearchPage when tapped.
+                        /// However, the code is currently commented out, so it is not active in
+                        /// the application.
+                        GestureDetector(
+                      child: Container(
+                        width: MediaQuery.sizeOf(context).width,
+                        height: 55.0,
+                        padding: const EdgeInsets.all(5.0),
+                        margin: const EdgeInsets.symmetric(
+                            horizontal: 15.0, vertical: 5.0),
+                        // margin: EdgeInsets.zero,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(
+                            10.0,
+                          ),
+                          color: Theme.of(context).primaryColor,
+                          boxShadow: const [
+                            BoxShadow(
+                              color: Colors.white60,
+                              blurRadius: 5.0,
+                              offset: Offset(1.5, 1.5),
+                              // shadow direction: bottom right
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          children: [
+                            SizedBox(
+                              width: 10,
+                            ),
+                            Icon(Icons.search),
+                            // homeDrawer(context: context),
+                            const SizedBox(
+                              width: 15.0,
+                            ),
+                            Text(
+                              AppLocalizations.of(
+                                context,
+                              )!
+                                  .searchYt,
+                              style: TextStyle(
+                                fontSize: 20.0,
+                                color: Theme.of(context)
+                                    .textTheme
+                                    .bodySmall!
+                                    .color,
+                                fontWeight: FontWeight.normal,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-              ),
-              onTap: () => Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => SearchPage(
-                    query: '',
-                    fromHome: true,
-                    searchType: Hive.box('settings')
-                            .get('searchYtMusic', defaultValue: true) as bool
-                        ? 'ytm'
-                        : 'yt',
-                    autofocus: true,
-                  ),
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => SearchPage(
+                            query: '',
+                            fromHome: true,
+                            searchType: Hive.box('settings').get(
+                                    'searchYtMusic',
+                                    defaultValue: true) as bool
+                                ? 'ytm'
+                                : 'yt',
+                            autofocus: true,
+                          ),
+                        ),
+                      ),
+                    );
+
+                    //         GestureDetector(
+                    //           child: AnimatedContainer(
+                    //             width: MediaQuery.of(context).size.width,
+                    //             height: appBarHeight,
+                    //             duration: const Duration(milliseconds: 150),
+                    //             padding: const EdgeInsets.all(2.0),
+                    //             decoration: BoxDecoration(
+                    //               borderRadius: BorderRadius.circular(10.0),
+                    //               color: Theme.of(context).cardColor,
+                    //               boxShadow: const [
+                    //                 BoxShadow(
+                    //                   color: Colors.black26,
+                    //                   blurRadius: 5.0,
+                    //                   offset: Offset(1.5, 1.5),
+                    //                 ),
+                    //               ],
+                    //             ),
+                    //             child: Row(
+                    //               children: [
+                    //                 const SizedBox(width: 10.0),
+                    //                 AnimatedOpacity(
+                    //                   opacity: iconOpacity,
+                    //                   duration: const Duration(milliseconds: 150),
+                    //                   child: Icon(
+                    //                     CupertinoIcons.search,
+                    //                     color: Theme.of(context).colorScheme.secondary,
+                    //                   ),
+                    //                 ),
+                    //                 const SizedBox(width: 10.0),
+                    //                 Text(
+                    //                   AppLocalizations.of(context)!.searchText,
+                    //                   style: TextStyle(
+                    //                     fontSize: 16.0,
+                    //                     color: Theme.of(context)
+                    //                         .textTheme
+                    //                         .bodySmall!
+                    //                         .color,
+                    //                     fontWeight: FontWeight.normal,
+                    //                   ),
+                    //                 ),
+                    //               ],
+                    //             ),
+                    //           ),
+                    //           onTap: () => Navigator.push(
+                    //             context,
+                    //             MaterialPageRoute(
+                    //               builder: (context) => const SearchPage(
+                    //                 query: '',
+                    // //         fromHome: true,
+                    // //         searchType: Hive.box('settings')
+                    // //                 .get('searchYtMusic', defaultValue: true) as bool
+                    // //             ? 'ytm'
+                    // //             : 'yt',
+                    // //         autofocus: true,
+                    //               ),
+                    //             ),
+                    //           ),
+                    //         );
+                  },
                 ),
               ),
             ),
+
+            // GestureDetector(
+            //   child: Container(
+            //     width: MediaQuery.sizeOf(context).width,
+            //     height: 55.0,
+            //     padding: const EdgeInsets.all(5.0),
+            //     margin:
+            //         const EdgeInsets.symmetric(horizontal: 15.0, vertical: 5.0),
+            //     // margin: EdgeInsets.zero,
+            //     decoration: BoxDecoration(
+            //       borderRadius: BorderRadius.circular(
+            //         10.0,
+            //       ),
+            //       color: Theme.of(context).primaryColor,
+            //       boxShadow: const [
+            //         BoxShadow(
+            //           color: Colors.white60,
+            //           blurRadius: 5.0,
+            //           offset: Offset(1.5, 1.5),
+            //           // shadow direction: bottom right
+            //         ),
+            //       ],
+            //     ),
+            //     child: Row(
+            //       children: [
+            //         SizedBox(
+            //           width: 10,
+            //         ),
+            //         Icon(Icons.search),
+            //         // homeDrawer(context: context),
+            //         const SizedBox(
+            //           width: 15.0,
+            //         ),
+            //         Text(
+            //           AppLocalizations.of(
+            //             context,
+            //           )!
+            //               .searchYt,
+            //           style: TextStyle(
+            //             fontSize: 20.0,
+            //             color: Theme.of(context).textTheme.bodySmall!.color,
+            //             fontWeight: FontWeight.normal,
+            //           ),
+            //         ),
+            //       ],
+            //     ),
+            //   ),
+            //   onTap: () => Navigator.push(
+            //     context,
+            //     MaterialPageRoute(
+            //       builder: (context) => SearchPage(
+            //         query: '',
+            //         fromHome: true,
+            //         searchType: Hive.box('settings')
+            //                 .get('searchYtMusic', defaultValue: true) as bool
+            //             ? 'ytm'
+            //             : 'yt',
+            //         autofocus: true,
+            //       ),
+            //     ),
+            //   ),
+            // ),
           ],
         ),
       ),
