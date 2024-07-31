@@ -72,6 +72,9 @@ class YtMusicService {
     Map<String, String>? headers,
   ) async {
     final Uri uri = Uri.https(url);
+    print(uri);
+    print(headers);
+    print('checking api............................');
     final Response response = await get(uri, headers: headers);
     return response;
   }
@@ -108,7 +111,14 @@ class YtMusicService {
     Map<String, String>? headers,
   ) async {
     final Uri uri = Uri.https(ytmDomain, baseApiEndpoint + endpoint, ytmParams);
+    print(uri);
+    print('uri is checking final...............///////////////');
+    print(headers);
+    print('checking headers............................');
+    print(jsonEncode(body));
+    print('checking body............................');
     final response = await post(uri, headers: headers, body: jsonEncode(body));
+    print(response.statusCode);
     if (response.statusCode == 200) {
       return json.decode(response.body) as Map;
     } else {
@@ -594,7 +604,9 @@ class YtMusicService {
     }
   }
 
+  String? heading;
   Future<Map> getPlaylistDetails(String playlistId) async {
+    //FIXME:
     if (headers == null) {
       await init();
     }
@@ -605,7 +617,12 @@ class YtMusicService {
       body['browseId'] = browseId;
       final Map response =
           await sendRequest(endpoints['browse']!, body, headers);
-      final String? heading = NavClass.nav(response, [
+      print(endpoints['browse']);
+      print(playlistId);
+      print('here is the checking for playlist ID............................');
+      // print(response);
+
+      heading = NavClass.nav(response, [
         'header',
         'musicDetailHeaderRenderer',
         'title',
@@ -613,7 +630,21 @@ class YtMusicService {
         0,
         'text',
       ]) as String?;
-      final String subtitle = (NavClass.nav(response, [
+      print(';;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;');
+      print(NavClass.nav(response, [
+        'header',
+        'musicDetailHeaderRenderer',
+        'title',
+        'runs',
+        0,
+        'text',
+      ]));
+      print(';;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;');
+
+      print(response);
+      print(heading);
+      print('checking heading ..............');
+      String? subtitle = (NavClass.nav(response, [
                 'header',
                 'musicDetailHeaderRenderer',
                 'subtitle',

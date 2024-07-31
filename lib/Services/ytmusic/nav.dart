@@ -156,14 +156,22 @@ class NavClass {
     ...navigationWatchPlaylistId,
   ];
 
-  static dynamic nav(dynamic root, List items) {
+  static dynamic nav(var root, List items) {
     try {
-      dynamic res = root;
+      print("root");
+      print(root);
+      print("items");
+      print(items);
+      print('ekjioejdiejdiejdoejfciejviejfcrf,,,,,,,,,,,,,,,,,,,,,,');
+      var res = root;
       for (final item in items) {
         res = res[item];
       }
+      print(res); //FIXME:not working
       return res;
     } catch (e) {
+      print("error");
+      print(e);
       return null;
     }
   }
