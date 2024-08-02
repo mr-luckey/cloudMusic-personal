@@ -618,6 +618,29 @@ class _YouTubeState extends State<YouTube>
                     ),
                   ],
                 ),
+                child: Row(
+                  children: [
+                    SizedBox(
+                      width: 10,
+                    ),
+                    Icon(Icons.search),
+                    // homeDrawer(context: context),
+                    const SizedBox(
+                      width: 15.0,
+                    ),
+                    Text(
+                      AppLocalizations.of(
+                        context,
+                      )!
+                          .searchYt,
+                      style: TextStyle(
+                        fontSize: 20.0,
+                        color: Theme.of(context).textTheme.bodySmall!.color,
+                        fontWeight: FontWeight.normal,
+                      ),
+                    ),
+                  ],
+                ),
               ),
               onTap: () => Navigator.push(
                 context,

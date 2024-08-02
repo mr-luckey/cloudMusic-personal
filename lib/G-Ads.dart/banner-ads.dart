@@ -14,13 +14,20 @@ class BannerAdWidget extends StatefulWidget {
 class _BannerAdWidgetState extends State<BannerAdWidget> {
   late BannerAd _bannerAd;
   final List<String> _adUnitIds = [
-    'ca-app-pub-5561438827097019/2466400091', // Banner Ad Unit ID 1
-    'ca-app-pub-5561438827097019/5644410976', // Banner Ad Unit ID 2
-    'ca-app-pub-5561438827097019/9392084296', // Banner Ad Unit ID 3
-    'ca-app-pub-5561438827097019/7516482574', // Banner Ad Unit ID 4
-    'ca-app-pub-5561438827097019/3664867478', // Banner Ad Unit ID 5
-    'ca-app-pub-5561438827097019/4313989766',
-    'ca-app-pub-5561438827097019/2152475253', // Banner Ad Unit ID 6
+    // 'ca-app-pub-5561438827097019/2466400091', // Banner Ad Unit ID 1
+    'ca-app-pub-3940256099942544/9214589741',
+    'ca-app-pub-3940256099942544/9214589741',
+    'ca-app-pub-3940256099942544/9214589741',
+    'ca-app-pub-3940256099942544/9214589741',
+    'ca-app-pub-3940256099942544/9214589741',
+    'ca-app-pub-3940256099942544/9214589741',
+
+    // 'ca-app-pub-5561438827097019/5644410976', // Banner Ad Unit ID 2
+    // 'ca-app-pub-5561438827097019/9392084296', // Banner Ad Unit ID 3
+    // 'ca-app-pub-5561438827097019/7516482574', // Banner Ad Unit ID 4
+    // 'ca-app-pub-5561438827097019/3664867478', // Banner Ad Unit ID 5
+    // 'ca-app-pub-5561438827097019/4313989766',
+    // 'ca-app-pub-5561438827097019/2152475253', // Banner Ad Unit ID 6
   ];
 
   @override

@@ -2,6 +2,7 @@
 
 import 'package:blackhole/APIs/api.dart';
 import 'package:blackhole/CustomWidgets/snackbar.dart';
+import 'package:blackhole/G-Ads.dart/Reward_ads.dart';
 import 'package:blackhole/G-Ads.dart/intersatail_ads.dart';
 import 'package:blackhole/Services/download.dart';
 import 'package:flutter/material.dart';
@@ -25,6 +26,7 @@ class DownloadButton extends StatefulWidget {
 
 class _DownloadButtonState extends State<DownloadButton> {
   late Download down;
+  final RewardedAdManager rewardedAdManager = RewardedAdManager();
   final Box downloadsBox = Hive.box('downloads');
   final ValueNotifier<bool> showStopButton = ValueNotifier<bool>(false);
 
@@ -64,10 +66,10 @@ class _DownloadButtonState extends State<DownloadButton> {
                 color: Theme.of(context).colorScheme.secondary,
                 iconSize: widget.size ?? 24.0,
                 onPressed: () {
-                  AdManager.showInterstitialAd();
-
-                  // InterstitialAdWidget();
-                  down.prepareDownload(context, widget.data);
+                  // AdManager.showInterstitialAd();
+                  rewardedAdManager.showRewardedAd(context, () {
+                    down.prepareDownload(context, widget.data);
+                  });
                 },
               )
             : down.progress == 0
@@ -81,8 +83,11 @@ class _DownloadButtonState extends State<DownloadButton> {
                     color: Theme.of(context).iconTheme.color,
                     tooltip: 'Download',
                     onPressed: () {
-                      AdManager.showInterstitialAd();
-                      down.prepareDownload(context, widget.data);
+                      rewardedAdManager.showRewardedAd(context, () {
+                        down.prepareDownload(context, widget.data);
+                      });
+                      // AdManager.showInterstitialAd();
+                      // down.prepareDownload(context, widget.data);
                     },
                   )
                 : GestureDetector(
@@ -170,6 +175,7 @@ class MultiDownloadButton extends StatefulWidget {
 }
 
 class _MultiDownloadButtonState extends State<MultiDownloadButton> {
+  final RewardedAdManager rewardedAdManager = RewardedAdManager();
   late Download down;
   int done = 0;
 
@@ -217,22 +223,41 @@ class _MultiDownloadButtonState extends State<MultiDownloadButton> {
                       iconSize: 25.0,
                       tooltip: AppLocalizations.of(context)!.down,
                       onPressed: () async {
-                        // InterstitialAdWidget();
-                        AdManager.showInterstitialAd();
-
-                        for (final items in widget.data) {
-                          down.prepareDownload(
-                            context,
-                            items as Map,
-                            createFolder: true,
-                            folderName: widget.playlistName,
-                          );
-                          await _waitUntilDone(items['id'].toString());
-                          setState(() {
-                            done++;
-                          });
-                        }
+                        // AdManager.showInterstitialAd();
+                        rewardedAdManager.showRewardedAd(context, () async {
+                          for (final items in widget.data) {
+                            down.prepareDownload(
+                              context,
+                              items as Map,
+                              createFolder: true,
+                              folderName: widget.playlistName,
+                            );
+                            await _waitUntilDone(items['id'].toString());
+                            setState(() {
+                              done++;
+                            });
+                          }
+                        });
                       },
+
+                      // onPressed: () async {
+                      //   // InterstitialAdWidget();
+
+                      //   // AdManager.showInterstitialAd();
+
+                      //   // for (final items in widget.data) {
+                      //   //   down.prepareDownload(
+                      //   //     context,
+                      //   //     items as Map,
+                      //   //     createFolder: true,
+                      //   //     folderName: widget.playlistName,
+                      //   //   );
+                      //   //   await _waitUntilDone(items['id'].toString());
+                      //   //   setState(() {
+                      //   //     done++;
+                      //   //   });
+                      //   // }
+                      // },
                     ),
                   )
                 : Stack(
@@ -283,6 +308,7 @@ class AlbumDownloadButton extends StatefulWidget {
 }
 
 class _AlbumDownloadButtonState extends State<AlbumDownloadButton> {
+  final RewardedAdManager rewardedAdManager = RewardedAdManager();
   late Download down;
   int done = 0;
   List data = [];
@@ -330,29 +356,55 @@ class _AlbumDownloadButtonState extends State<AlbumDownloadButton> {
                       color: Theme.of(context).iconTheme.color,
                       tooltip: AppLocalizations.of(context)!.down,
                       onPressed: () async {
-                        // InterstitialAdWidget();
                         AdManager.showInterstitialAd();
                         ShowSnackBar().showSnackBar(
                           context,
                           '${AppLocalizations.of(context)!.downingAlbum} "${widget.albumName}"',
                         );
 
-                        data = (await SaavnAPI()
-                            .fetchAlbumSongs(widget.albumId))['songs'] as List;
-                        for (final items in data) {
-                          down.prepareDownload(
-                            context,
-                            items as Map,
-                            createFolder: true,
-                            folderName: widget.albumName,
-                          );
-                          await _waitUntilDone(items['id'].toString());
-                          setState(() {
-                            done++;
-                          });
-                        }
-                        finished = true;
+                        rewardedAdManager.showRewardedAd(context, () async {
+                          data = (await SaavnAPI()
+                                  .fetchAlbumSongs(widget.albumId))['songs']
+                              as List;
+                          for (final items in data) {
+                            down.prepareDownload(
+                              context,
+                              items as Map,
+                              createFolder: true,
+                              folderName: widget.albumName,
+                            );
+                            await _waitUntilDone(items['id'].toString());
+                            setState(() {
+                              done++;
+                            });
+                          }
+                          finished = true;
+                        });
                       },
+                      // onPressed: () async {
+                      //   // InterstitialAdWidget();
+                      //   AdManager.showInterstitialAd();
+                      //   ShowSnackBar().showSnackBar(
+                      //     context,
+                      //     '${AppLocalizations.of(context)!.downingAlbum} "${widget.albumName}"',
+                      //   );
+
+                      //   data = (await SaavnAPI()
+                      //       .fetchAlbumSongs(widget.albumId))['songs'] as List;
+                      //   for (final items in data) {
+                      //     down.prepareDownload(
+                      //       context,
+                      //       items as Map,
+                      //       createFolder: true,
+                      //       folderName: widget.albumName,
+                      //     );
+                      //     await _waitUntilDone(items['id'].toString());
+                      //     setState(() {
+                      //       done++;
+                      //     });
+                      //   }
+                      //   finished = true;
+                      // },
                     ),
                   )
                 : Stack(

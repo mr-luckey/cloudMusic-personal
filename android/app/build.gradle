@@ -80,7 +80,8 @@ dependencies {
     // implementation 'com.android.tools.build:gradle:3.4.2'
     implementation 'com.google.android.gms:play-services-measurement-api:21.5.1'
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
-    implementation'com.google.android.gms:play-services-measurement:21.5.1'
+    // implementation'com.google.android.gms:play-services-measurement:21.5.1'
+    implementation 'com.google.android.gms:play-services-ads:23.2.0'
 //     {
 //     exclude group: 'com.google.android.gms', module: 'play-services-measurement-base'
 // }
