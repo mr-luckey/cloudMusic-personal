@@ -366,43 +366,7 @@ class AudioPlayerHandlerImpl extends BaseAudioHandler
       return;
     }
     final MediaItem newItem = MediaItemConverter.mapToMediaItem(newData);
-    // final String? boxName = mediaItem.extras!['playlistBox']?.toString();
-    // if (boxName != null) {
-    //   Logger.root.info('linked with playlist $boxName');
-    //   if (Hive.box(mediaItem.extras!['playlistBox'].toString())
-    //       .containsKey(mediaItem.id)) {
-    //     Logger.root.info('updating item in playlist $boxName');
-    //     Hive.box(mediaItem.extras!['playlistBox'].toString()).put(
-    //       mediaItem.id,
-    //       MediaItemConverter.mediaItemToMap(newItem),
-    //     );
-    //     // put(
-    //     //   mediaItem.id,
-    //     //   MediaItemConverter.mediaItemToMap(newItem),
-    //     // );
-    //   }
-    // }
-    // Logger.root.info('player | inserting refreshed item');
-    // late AudioSource audioSource;
-    // if (cacheSong) {
-    //   audioSource = LockCachingAudioSource(
-    //     Uri.parse(
-    //       newItem.extras!['url'].toString(),
-    //     ),
-    //   );
-    // } else {
-    //   audioSource = AudioSource.uri(
-    //     Uri.parse(
-    //       newItem.extras!['url'].toString(),
-    //     ),
-    //   );
-    // }
-    // final index = queue.value.indexWhere((item) => item.id == newItem.id);
-    // _mediaItemExpando[audioSource] = newItem;
-    // _playlist
-    // .removeAt(index)
-    // .then((value) =>
-    // _playlist.insert(index, audioSource));
+
     addQueueItem(newItem);
   }
 

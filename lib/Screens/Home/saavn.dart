@@ -923,38 +923,6 @@ class _SaavnHomePageState extends State<SaavnHomePage>
                         const BannerAdWidget(
                           index: 3,
                         ),
-                        // if (_bannerAd != null)
-                        //   Align(
-                        //     alignment: Alignment.bottomCenter,
-                        //     child: SafeArea(
-                        //       child: SizedBox(
-                        //         width: _bannerAd!.size.width.toDouble(),
-                        //         height: _bannerAd!.size.height.toDouble(),
-                        //         child: AdWidget(ad: _bannerAd!),
-                        //       ),
-                        //     ),
-                        //   ),
-                        // NativeAdmob(
-                        //     adUnitID: "ca-app-pub-3940256099942544/6300978111",
-                        //     loading: Center(child: CircularProgressIndicator()),
-                        //     error: Text("Failed to load the ad"),
-                        //     controller: _controller,
-                        //     type: NativeAdmobType.full,
-                        //     options: NativeAdmobOptions(
-                        //       ratingColor: Colors.green,
-                        //     ))
-                        // Text("data"),
-                        // GetBuilder<BannerController>(
-                        //   builder: (controller) {
-                        //     if (controller.isLoaded) {
-                        //       return AdWidget(ad: controller.bannerAd!);
-                        //     } else {
-                        //       return CircularProgressIndicator();
-                        //     }
-                        //   },
-                        // ),
-
-                        ///TODO: banner implementation
                       ],
                     );
             },

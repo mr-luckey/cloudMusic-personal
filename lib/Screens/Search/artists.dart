@@ -468,20 +468,6 @@ class _ArtistSearchPageState extends State<ArtistSearchPage> {
                                                 },
                                               ),
                                               const Spacer(),
-                                              // removed as it wasn't useful
-                                              // if (data['Top Songs'] !=
-                                              //     null)
-                                              // MultiDownloadButton(
-                                              //   data:
-                                              //       data['Top Songs']!,
-                                              //   playlistName: widget
-                                              //           .data['title']
-                                              //           ?.toString() ??
-                                              //       'Songs',
-                                              // ),
-                                              // const SizedBox(
-                                              //   width: 5,
-                                              // ),
                                             ],
                                           ),
                                         ],

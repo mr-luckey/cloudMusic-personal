@@ -450,14 +450,6 @@ class _OthersPageState extends State<OthersPage> {
               keyName: 'stopForegroundService',
               defaultValue: true,
             ),
-            // const BoxSwitchTile(
-            //   title: Text('Remove Service from foreground when paused'),
-            //   subtitle: Text(
-            //       "If turned on, you can slide notification when paused to stop the service. But Service can also be stopped by android to release memory. If you don't want android to stop service while paused, turn it off\nDefault: On\n"),
-            //   isThreeLine: true,
-            //   keyName: 'stopServiceOnPause',
-            //   defaultValue: true,
-            // ),
             BoxSwitchTile(
               title: Text(
                 AppLocalizations.of(

@@ -635,22 +635,7 @@ class _AppUIPageState extends State<AppUIPage> {
               keyName: 'showRecent',
               defaultValue: true,
             ),
-            // BoxSwitchTile(
-            //   title: Text(
-            //     AppLocalizations.of(
-            //       context,
-            //     )!
-            //         .showHistory,
-            //   ),
-            //   subtitle: Text(
-            //     AppLocalizations.of(
-            //       context,
-            //     )!
-            //         .showHistorySub,
-            //   ),
-            //   keyName: 'showHistory',
-            //   defaultValue: true,
-            // ),
+
             ListTile(
               title: Text(
                 AppLocalizations.of(

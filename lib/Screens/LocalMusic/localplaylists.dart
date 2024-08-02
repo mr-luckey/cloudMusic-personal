@@ -133,42 +133,8 @@ class _LocalPlaylistsState extends State<LocalPlaylists> {
                           );
                         }
                       }
-                      // if (value == 3) {
-                      //   TextInputDialog().showTextInputDialog(
-                      //       context: context,
-                      //       keyboardType: TextInputType.text,
-                      //       title: AppLocalizations.of(context)!
-                      //           .rename,
-                      //       initialText:
-                      //           playlistDetails[index].playlist,
-                      //       onSubmitted: (value) async {
-                      //         Navigator.pop(context);
-                      //         await offlineAudioQuery
-                      //             .renamePlaylist(
-                      //                 playlistId:
-                      //                     playlistDetails[index].id,
-                      //                 newName: value);
-                      //         offlineAudioQuery
-                      //             .getPlaylists()
-                      //             .then((value) {
-                      //           playlistDetails = value;
-                      //           setState(() {});
-                      //         });
-                      //       });
-                      // }
                     },
                     itemBuilder: (context) => [
-                      // PopupMenuItem(
-                      //   value: 3,
-                      //   child: Row(
-                      //     children: [
-                      //       const Icon(Icons.edit_rounded),
-                      //       const SizedBox(width: 10.0),
-                      //       Text(AppLocalizations.of(context)!
-                      //           .rename),
-                      //     ],
-                      //   ),
-                      // ),
                       PopupMenuItem(
                         value: 0,
                         child: Row(

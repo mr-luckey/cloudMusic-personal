@@ -1,5 +1,3 @@
-// Coded by Naseer Ahmed
-
 import 'package:blackhole/APIs/api.dart';
 import 'package:blackhole/APIs/spotify_api.dart';
 import 'package:blackhole/Helpers/audio_query.dart';
@@ -15,13 +13,11 @@ import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
 import 'package:on_audio_query/on_audio_query.dart';
 
-// ignore: avoid_classes_with_only_static_members
 class HandleRoute {
   static Route? handleRoute(String? url) {
     Logger.root.info('received route url: $url');
     if (url == null) return null;
-    // blackhole specific url
-    // blackhole://blackhole/search?q=stay+with+me
+
     if (url.startsWith('/search')) {
       final uri = Uri.parse(url);
       final String? title = uri.queryParameters['title']?.toString();
@@ -49,7 +45,6 @@ class HandleRoute {
               },
             );
             if (index != -1) {
-              // found a song
               PlayerInvoke.init(
                 songsList: [result[index] as Map],
                 index: 0,
@@ -99,7 +94,6 @@ class HandleRoute {
         }
       }
     } else if (url.contains('spotify')) {
-      // TODO: Add support for spotify links
       Logger.root.info('received spotify link');
       final RegExpMatch? songResult =
           RegExp(r'.*spotify.com.*?\/(track)\/(.*?)[/?]').firstMatch('$url/');
@@ -113,7 +107,6 @@ class HandleRoute {
         );
       }
     } else if (url.contains('youtube') || url.contains('youtu.be')) {
-      // TODO: Add support for youtube links
       Logger.root.info('received youtube link');
       final RegExpMatch? videoId =
           RegExp(r'.*[\?\/](v|list)[=\/](.*?)[\/\?&#]').firstMatch('$url/');
@@ -245,10 +238,6 @@ class YtUrlHandler extends StatelessWidget {
           MaterialPageRoute(
             builder: (context) => YouTubePlaylist(
               playlistId: id,
-              // playlistImage: '',
-              // playlistName: '',
-              // playlistSubtitle: '',
-              // playlistSecondarySubtitle: '',
             ),
           ),
         );

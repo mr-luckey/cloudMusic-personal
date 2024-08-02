@@ -19,18 +19,11 @@ import 'package:share_plus/share_plus.dart';
 class YouTubePlaylist extends StatefulWidget {
   final String playlistId;
   final String type;
-  // final String playlistName;
-  // final String? playlistSubtitle;
-  // final String? playlistSecondarySubtitle;
-  // final String playlistImage;
+
   const YouTubePlaylist({
     super.key,
     required this.playlistId,
     this.type = 'playlist',
-    // required this.playlistName,
-    // required this.playlistSubtitle,
-    // required this.playlistSecondarySubtitle,
-    // required this.playlistImage,
   });
 
   @override
@@ -277,31 +270,6 @@ class _YouTubePlaylistState extends State<YouTubePlaylist> {
                                   index: 0,
                                   isOffline: false,
                                 );
-                                // for (var i = 0;
-                                //     i < searchedList.length;
-                                //     i++) {
-                                //   YouTubeServices.instance
-                                //       .formatVideo(
-                                //     video: searchedList[i],
-                                //     quality: Hive.box('settings')
-                                //         .get(
-                                //           'ytQuality',
-                                //           defaultValue: 'Low',
-                                //         )
-                                //         .toString(),
-                                //   )
-                                //       .then((songMap) {
-                                //     final MediaItem mediaItem =
-                                //         MediaItemConverter.mapToMediaItem(
-                                //       songMap!,
-                                //     );
-                                //     addToNowPlaying(
-                                //       context: context,
-                                //       mediaItem: mediaItem,
-                                //       showNotification: false,
-                                //     );
-                                //   });
-                                // }
                               },
                               trailing: YtSongTileTrailingMenu(data: entry),
                             ),

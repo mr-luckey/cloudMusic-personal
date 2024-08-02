@@ -528,33 +528,10 @@ class YtMusicService {
       body['video_id'] = videoId;
       final Map response =
           await sendRequest(endpoints['get_song']!, body, headers);
-      // int maxBitrate = 0;
-      // String? url;
-      // final formats =
-      //     await NavClass.nav(response, ['streamingData', 'formats']) as List;
-      // for (final element in formats) {
-      //   if (element['bitrate'] != null) {
-      //     if (int.parse(element['bitrate'].toString()) > maxBitrate) {
-      //       maxBitrate = int.parse(element['bitrate'].toString());
-      //       url = element['signatureCipher'].toString();
-      //     }
-      //   }
-      // }
-      // final adaptiveFormats =
-      //     await NavClass.nav(response, ['streamingData', 'adaptiveFormats']) as List;
-      // for (final element in adaptiveFormats) {
-      //   if (element['bitrate'] != null) {
-      //     if (int.parse(element['bitrate'].toString()) > maxBitrate) {
-      //       maxBitrate = int.parse(element['bitrate'].toString());
-      //       url = element['signatureCipher'].toString();
-      //     }
-      //   }
-      // }
+
       final videoDetails =
           await NavClass.nav(response, ['videoDetails']) as Map;
-      // final reg = RegExp('url=(.*)');
-      // final matches = reg.firstMatch(url!);
-      // final String result = matches!.group(1).toString().unescape();
+
       List<String> urls = [];
       List<Map> urlsData = [];
       String finalUrl = '';

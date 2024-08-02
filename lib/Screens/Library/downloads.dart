@@ -911,6 +911,8 @@ class _DownSongsTabState extends State<DownSongsTab>
                         },
                       ),
                       onTap: () {
+                        print(
+                            'testing print command....................................');
                         PlayerInvoke.init(
                           songsList: widget.songs,
                           index: index,

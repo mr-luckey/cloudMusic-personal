@@ -146,31 +146,6 @@ class _YouTubeArtistState extends State<YouTubeArtist> {
                                   index: 0,
                                   isOffline: false,
                                 );
-                                // for (var i = 0;
-                                //     i < searchedList.length;
-                                //     i++) {
-                                //   YouTubeServices.instance
-                                //       .formatVideo(
-                                //     video: searchedList[i],
-                                //     quality: Hive.box('settings')
-                                //         .get(
-                                //           'ytQuality',
-                                //           defaultValue: 'Low',
-                                //         )
-                                //         .toString(),
-                                //   )
-                                //       .then((songMap) {
-                                //     final MediaItem mediaItem =
-                                //         MediaItemConverter.mapToMediaItem(
-                                //       songMap!,
-                                //     );
-                                //     addToNowPlaying(
-                                //       context: context,
-                                //       mediaItem: mediaItem,
-                                //       showNotification: false,
-                                //     );
-                                //   });
-                                // }
                               },
                               trailing: YtSongTileTrailingMenu(data: entry),
                             ),
