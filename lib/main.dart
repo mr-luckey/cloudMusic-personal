@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:io';
-
 import 'package:blackhole/G-Ads.dart/intersatail_ads.dart';
 import 'package:blackhole/Helpers/config.dart';
 import 'package:blackhole/Helpers/handle_native.dart';
@@ -8,11 +7,9 @@ import 'package:blackhole/Helpers/import_export_playlist.dart';
 import 'package:blackhole/Helpers/logging.dart';
 import 'package:blackhole/Helpers/route_handler.dart';
 import 'package:blackhole/Screens/Common/routes.dart';
-import 'package:blackhole/Screens/Home/home_screen.dart';
 import 'package:blackhole/Screens/Player/audioplayer.dart';
 import 'package:blackhole/constants/constants.dart';
 import 'package:blackhole/constants/languagecodes.dart';
-
 import 'package:blackhole/providers/audio_service_provider.dart';
 import 'package:blackhole/theme/app_theme.dart';
 import 'package:flutter/material.dart';
@@ -28,7 +25,6 @@ import 'package:metadata_god/metadata_god.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:receive_sharing_intent/receive_sharing_intent.dart';
 import 'package:sizer/sizer.dart';
-
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -54,11 +50,9 @@ Future<void> main() async {
 
   runApp(MyApp());
 }
-
 Future<void> setOptimalDisplayMode() async {
   await FlutterDisplayMode.setHighRefreshRate();
 }
-
 Future<void> startService() async {
   await initializeLogging();
   MetadataGod.initialize();
@@ -68,7 +62,6 @@ Future<void> startService() async {
   GetIt.I.registerSingleton<AudioPlayerHandler>(audioHandler);
   GetIt.I.registerSingleton<MyTheme>(MyTheme());
 }
-
 Future<void> openHiveBox(String boxName, {bool limit = false}) async {
   final box = await Hive.openBox(boxName).onError((error, stackTrace) async {
     Logger.root.severe('Failed to open $boxName Box', error, stackTrace);
@@ -89,7 +82,6 @@ Future<void> openHiveBox(String boxName, {bool limit = false}) async {
     box.clear();
   }
 }
-
 class MyApp extends StatefulWidget {
   @override
   _MyAppState createState() => _MyAppState();
@@ -97,7 +89,6 @@ class MyApp extends StatefulWidget {
   static _MyAppState of(BuildContext context) =>
       context.findAncestorStateOfType<_MyAppState>()!;
 }
-
 class _MyAppState extends State<MyApp> {
   Locale _locale = const Locale('en', '');
   late StreamSubscription _intentDataStreamSubscription;
@@ -108,11 +99,9 @@ class _MyAppState extends State<MyApp> {
     _intentDataStreamSubscription.cancel();
     super.dispose();
   }
-
   @override
   void initState() {
     super.initState();
-
     final String systemLangCode = Platform.localeName.substring(0, 2);
     final String? lang = Hive.box('settings').get('lang') as String?;
     if (lang == null &&
@@ -121,11 +110,9 @@ class _MyAppState extends State<MyApp> {
     } else {
       _locale = Locale(LanguageCodes.languageCodes[lang ?? 'English'] ?? 'en');
     }
-
     AppTheme.currentTheme.addListener(() {
       setState(() {});
     });
-
     if (Platform.isAndroid || Platform.isIOS) {
       _intentDataStreamSubscription = recint.getMediaStream().listen(
         (List<SharedMediaFile> value) {
@@ -160,7 +147,6 @@ class _MyAppState extends State<MyApp> {
           Logger.root.severe('ERROR in getMediaStream', err);
         },
       );
-
       recint.getInitialMedia().then((List<SharedMediaFile> value) {
         if (value.isNotEmpty) {
           Logger.root.info('Received Intent initially: $value');

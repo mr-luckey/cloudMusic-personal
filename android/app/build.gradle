@@ -18,12 +18,12 @@ if (flutterRoot == null) {
 
 def flutterVersionCode = localProperties.getProperty('flutter.versionCode')
 if (flutterVersionCode == null) {
-    flutterVersionCode = '4'
+    flutterVersionCode = '6'
 }
 
 def flutterVersionName = localProperties.getProperty('flutter.versionName')
 if (flutterVersionName == null) {
-    flutterVersionName = '4.0'
+    flutterVersionName = '6.0'
 }
 
 apply plugin: 'com.android.application'
@@ -34,6 +34,7 @@ apply from: "$flutterRoot/packages/flutter_tools/gradle/flutter.gradle"
 android {
     compileSdkVersion 35
     ndkVersion "27.0.12077973"
+    // buildToolsVersion "30.0.3"
     namespace 'com.appware.cloudSpot'
 
     sourceSets {
@@ -44,11 +45,14 @@ android {
         applicationId "com.appware.cloudSpot"
         minSdkVersion 21
         targetSdkVersion 35
-        multiDexEnabled true
+        multiDexEnabled false
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
     }
     signingConfigs {
+//        useProguard true
+
+
         release {
             keyAlias keystoreProperties['keyAlias']
             keyPassword keystoreProperties['keyPassword']
@@ -58,8 +62,14 @@ android {
     }
     buildTypes {
         release {
+//            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+//            useProguard true
+            minifyEnabled true
+            shrinkResources true
+//            proguardFile 'proguard-rules.pro'
             signingConfig signingConfigs.release
         }
+
     }
 
 
@@ -70,6 +80,7 @@ android {
     buildFeatures {
         viewBinding true
     }
+//    namespace 'com.appware.cloudSpot'
 }
 
 flutter {
@@ -77,8 +88,9 @@ flutter {
 }
 
 dependencies {
-    // implementation 'com.android.tools.build:gradle:3.4.2'
-    implementation 'com.google.android.gms:play-services-measurement-api:21.5.1'
+
+//     implementation 'com.android.tools.build:gradle:4.2.0'
+    implementation 'com.google.android.gms:play-services-measurement-api:21.0.0'
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
     // implementation'com.google.android.gms:play-services-measurement:21.5.1'
     implementation 'com.google.android.gms:play-services-ads:23.2.0'

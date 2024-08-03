@@ -66,7 +66,7 @@ class _SongsWidgetState extends State<SongsWidget> {
                     return const CircularProgressIndicator();
                   }
                   if (item.data!.isEmpty) return const Text("Nothing found!");
-                  return ListView.builder(
+                  return item.data!.isNotEmpty?  ListView.builder(
                     itemCount: item.data!.length,
                     itemBuilder: (context, index) {
                       final song = item.data![index];
@@ -74,7 +74,7 @@ class _SongsWidgetState extends State<SongsWidget> {
                           'Song title: ${song.title}, Artist: ${song.artist}');
                       return ListTile(
                         title: Text(
-                          song.title,
+                          song.title!,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -90,16 +90,20 @@ class _SongsWidgetState extends State<SongsWidget> {
                         onTap: () {
                           PlayerInvoke.init(
                             songsList: item.data!,
+
                             index: index,
-                            isOffline: true,
-                            fromDownloads: false,
-                            recommend: false,
+                            // isOffline: true,
+                            // fromDownloads: false,
+                            // recommend: false,
                           );
                         },
                       );
                     },
-                  );
-                },
+                  ): const Center(child: Text("No songs found"));
+
+
+
+                      },
               ),
       ),
     );

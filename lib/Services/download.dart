@@ -106,9 +106,8 @@ class Download with ChangeNotifier {
     filename = '${filename.replaceAll(avoid, "").replaceAll("  ", " ")}.m4a';
     if (dlPath == '') {
       Logger.root.info('Cached Download path is empty, getting new path');
-      final String? temp = await
-      ExtStorageProvider.getExtStorage
-        (//change here to getApplicationDocumentsDirectory
+      final String? temp = await ExtStorageProvider.getExtStorage(
+        //change here to getApplicationDocumentsDirectory
         dirName: 'Music',
         writeAccess: true,
       );
@@ -305,7 +304,8 @@ class Download with ChangeNotifier {
       appPath = Hive.box('settings').get('tempDirPath')?.toString();
       appPath ??= (await getTemporaryDirectory()).path;
     } else {
-      final Directory? temp = await getDownloadsDirectory();//change here to getApplicationDocumentsDirectory
+      final Directory? temp =
+          await getDownloadsDirectory(); //change here to getApplicationDocumentsDirectory
       appPath = temp!.path;
     }
 

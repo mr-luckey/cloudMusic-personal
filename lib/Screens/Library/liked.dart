@@ -800,9 +800,9 @@ class _SongsTabState extends State<SongsTab>
                   },
                 ),
               ),
-              BannerAdWidget(
-                index: 5,
-              ),
+              // BannerAdWidget(
+              //   index: 5,
+              // ),
               //TODO: banner ads implementation.
             ],
           );
@@ -852,9 +852,9 @@ class _AlbumsTabState extends State<AlbumsTab>
         : SingleChildScrollView(
             child: Column(
               children: [
-                BannerAdWidget(
-                  index: 4,
-                ),
+                // BannerAdWidget(
+                //   index: 4,
+                // ),
                 // Text("data test"), //TODO: Banner ads implementation
                 ListView.builder(
                   physics: const BouncingScrollPhysics(),

@@ -70,12 +70,12 @@ class PlayerInvoke {
     playTitle == ''
         ? playTitle = response.displayNameWOExt
         : playTitle = response.title;
-    String playArtist = response.artist!;
+    String? playArtist = response.artist;
     playArtist == '<unknown>'
         ? playArtist = 'Unknown'
-        : playArtist = response.artist!;
+        : playArtist = response.artist;
 
-    final String playAlbum = response.album!;
+    final String? playAlbum = response.album;
     final int playDuration = response.duration ?? 180000;
     final String imagePath = '${tempDir.path}/${response.displayNameWOExt}.png';
 
