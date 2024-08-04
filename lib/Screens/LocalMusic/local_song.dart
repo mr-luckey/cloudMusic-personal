@@ -93,8 +93,8 @@ class _SongsWidgetState extends State<SongsWidget> {
 
                             index: index,
                             // isOffline: true,
-                            // fromDownloads: false,
-                            // recommend: false,
+                            fromDownloads: false,
+                            recommend: false,
                           );
                         },
                       );
