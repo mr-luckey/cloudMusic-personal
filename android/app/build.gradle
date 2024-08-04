@@ -18,12 +18,12 @@ if (flutterRoot == null) {
 
 def flutterVersionCode = localProperties.getProperty('flutter.versionCode')
 if (flutterVersionCode == null) {
-    flutterVersionCode = '6'
+    flutterVersionCode = '7'
 }
 
 def flutterVersionName = localProperties.getProperty('flutter.versionName')
 if (flutterVersionName == null) {
-    flutterVersionName = '6.0'
+    flutterVersionName = '7.0'
 }
 
 apply plugin: 'com.android.application'
@@ -43,7 +43,7 @@ android {
 
     defaultConfig {
         applicationId "com.appware.cloudSpot"
-        minSdkVersion 21
+        minSdkVersion flutter.minSdkVersion
         targetSdkVersion 35
         multiDexEnabled false
         versionCode flutterVersionCode.toInteger()

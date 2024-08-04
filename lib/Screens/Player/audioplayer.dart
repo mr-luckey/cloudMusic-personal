@@ -1151,7 +1151,7 @@ class NowPlayingStream extends StatelessWidget {
                     ),
                   ),
                   subtitle: Text(
-                    queue[queueStateIndex + index].artist!,
+                    queue[queueStateIndex + index].artist.toString(),
                     overflow: TextOverflow.ellipsis,
                   ),
                   onTap: () {

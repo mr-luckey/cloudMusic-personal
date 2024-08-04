@@ -64,7 +64,7 @@ class Download with ChangeNotifier {
     download = true;
     if (Platform.isAndroid || Platform.isIOS) {
       Logger.root.info('Requesting storage permission');
-      PermissionStatus status = await Permission.storage.status;
+      PermissionStatus status = await Permission.accessMediaLocation.status;
       if (status.isDenied) {
         Logger.root.info('Request denied');
         await [
@@ -398,6 +398,7 @@ class Download with ChangeNotifier {
       if (download) {
         Logger.root.info('Download complete, modifying file');
         final file = File(filepath!);
+        print('filepath.............................: $filepath');
         await file.writeAsBytes(bytes);
 
         final client = HttpClient();

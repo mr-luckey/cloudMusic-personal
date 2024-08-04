@@ -28,9 +28,10 @@ class ExtStorageProvider {
     try {
       // checking platform
       if (Platform.isAndroid) {
-        if (await requestPermission(Permission.manageExternalStorage)) {
+        if (await requestPermission(Permission.accessMediaLocation)) {
           directory = await
-          getExternalStorageDirectory();// getting external storage directory
+          getExternalStorageDirectory();
+          // getting external storage directory
 
           // getting main path
           final String newPath = directory!.path.replaceFirst(
@@ -41,7 +42,7 @@ class ExtStorageProvider {
           // checking if directory exist or not
           if (!await directory.exists()) {
             // if directory not exists then asking for permission to create folder
-            await requestPermission(Permission.manageExternalStorage);
+            await requestPermission(Permission.accessMediaLocation);
             //creating folder
 
             await directory.create(recursive: true);
@@ -49,7 +50,7 @@ class ExtStorageProvider {
           if (await directory.exists()) {
             try {
               if (writeAccess) {
-                await requestPermission(Permission.manageExternalStorage);
+                await requestPermission(Permission.accessMediaLocation);
               }
               // if directory exists then returning the complete path
               return newPath;
