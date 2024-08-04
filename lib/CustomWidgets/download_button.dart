@@ -26,7 +26,7 @@ class DownloadButton extends StatefulWidget {
 
 class _DownloadButtonState extends State<DownloadButton> {
   late Download down;
-  final RewardedAdManager rewardedAdManager = RewardedAdManager();
+  // final RewardedAdManager rewardedAdManager = RewardedAdManager();
   final Box downloadsBox = Hive.box('downloads');
   final ValueNotifier<bool> showStopButton = ValueNotifier<bool>(false);
 
@@ -67,9 +67,9 @@ class _DownloadButtonState extends State<DownloadButton> {
                 iconSize: widget.size ?? 24.0,
                 onPressed: () {
                   // AdManager.showInterstitialAd();
-                  rewardedAdManager.showRewardedAd(context, () {
-                    down.prepareDownload(context, widget.data);
-                  });
+                  // rewardedAdManager.showRewardedAd(context, () {
+                  down.prepareDownload(context, widget.data);
+                  // });
                 },
               )
             : down.progress == 0
@@ -83,9 +83,9 @@ class _DownloadButtonState extends State<DownloadButton> {
                     color: Theme.of(context).iconTheme.color,
                     tooltip: 'Download',
                     onPressed: () {
-                      rewardedAdManager.showRewardedAd(context, () {
-                        down.prepareDownload(context, widget.data);
-                      });
+                      // rewardedAdManager.showRewardedAd(context, () {
+                      down.prepareDownload(context, widget.data);
+                      // });
                       // AdManager.showInterstitialAd();
                       // down.prepareDownload(context, widget.data);
                     },
@@ -175,7 +175,7 @@ class MultiDownloadButton extends StatefulWidget {
 }
 
 class _MultiDownloadButtonState extends State<MultiDownloadButton> {
-  final RewardedAdManager rewardedAdManager = RewardedAdManager();
+  // final RewardedAdManager rewardedAdManager = RewardedAdManager();
   late Download down;
   int done = 0;
 
@@ -224,20 +224,20 @@ class _MultiDownloadButtonState extends State<MultiDownloadButton> {
                       tooltip: AppLocalizations.of(context)!.down,
                       onPressed: () async {
                         // AdManager.showInterstitialAd();
-                        rewardedAdManager.showRewardedAd(context, () async {
-                          for (final items in widget.data) {
-                            down.prepareDownload(
-                              context,
-                              items as Map,
-                              createFolder: true,
-                              folderName: widget.playlistName,
-                            );
-                            await _waitUntilDone(items['id'].toString());
-                            setState(() {
-                              done++;
-                            });
-                          }
-                        });
+                        // rewardedAdManager.showRewardedAd(context, () async {
+                        for (final items in widget.data) {
+                          down.prepareDownload(
+                            context,
+                            items as Map,
+                            createFolder: true,
+                            folderName: widget.playlistName,
+                          );
+                          await _waitUntilDone(items['id'].toString());
+                          setState(() {
+                            done++;
+                          });
+                        }
+                        // });
                       },
 
                       // onPressed: () async {
@@ -308,7 +308,7 @@ class AlbumDownloadButton extends StatefulWidget {
 }
 
 class _AlbumDownloadButtonState extends State<AlbumDownloadButton> {
-  final RewardedAdManager rewardedAdManager = RewardedAdManager();
+  // final RewardedAdManager rewardedAdManager = RewardedAdManager();
   late Download down;
   int done = 0;
   List data = [];
@@ -362,24 +362,23 @@ class _AlbumDownloadButtonState extends State<AlbumDownloadButton> {
                           '${AppLocalizations.of(context)!.downingAlbum} "${widget.albumName}"',
                         );
 
-                        rewardedAdManager.showRewardedAd(context, () async {
-                          data = (await SaavnAPI()
-                                  .fetchAlbumSongs(widget.albumId))['songs']
-                              as List;
-                          for (final items in data) {
-                            down.prepareDownload(
-                              context,
-                              items as Map,
-                              createFolder: true,
-                              folderName: widget.albumName,
-                            );
-                            await _waitUntilDone(items['id'].toString());
-                            setState(() {
-                              done++;
-                            });
-                          }
-                          finished = true;
-                        });
+                        // rewardedAdManager.showRewardedAd(context, () async {
+                        data = (await SaavnAPI()
+                            .fetchAlbumSongs(widget.albumId))['songs'] as List;
+                        for (final items in data) {
+                          down.prepareDownload(
+                            context,
+                            items as Map,
+                            createFolder: true,
+                            folderName: widget.albumName,
+                          );
+                          await _waitUntilDone(items['id'].toString());
+                          setState(() {
+                            done++;
+                          });
+                        }
+                        finished = true;
+                        // });
                       },
                       // onPressed: () async {
                       //   // InterstitialAdWidget();
