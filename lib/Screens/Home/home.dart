@@ -76,127 +76,127 @@ class _HomePageState extends State<HomePage> {
     _controller.jumpToTab(index);
   }
 
-  void checkVersion() {
-    PackageInfo.fromPlatform().then((PackageInfo packageInfo) {
-      appVersion = packageInfo.version;
-
-      if (checkUpdate) {
-        Logger.root.info('Checking for update');
-        GitHub.getLatestVersion().then((String version) async {
-          if (compareVersion(version, appVersion!)) {
-            Logger.root.info('Update available');
-            ShowSnackBar().showSnackBar(
-              context,
-              AppLocalizations.of(context)!.updateAvailable,
-              duration: const Duration(seconds: 15),
-              action: SnackBarAction(
-                textColor: Theme.of(context).colorScheme.secondary,
-                label: AppLocalizations.of(context)!.update,
-                onPressed: () async {
-                  if (Platform.isAndroid) {
-                    List? abis = await Hive.box('settings').get('supportedAbis')
-                        as List?;
-
-                    if (abis == null) {
-                      final DeviceInfoPlugin deviceInfo = DeviceInfoPlugin();
-                      final AndroidDeviceInfo androidDeviceInfo =
-                          await deviceInfo.androidInfo;
-                      abis = androidDeviceInfo.supportedAbis;
-                      await Hive.box('settings').put('supportedAbis', abis);
-                    }
-                    if (abis.contains('arm64')) {
-                    } else if (abis.contains('armeabi')) {}
-                  }
-                  Navigator.pop(context);
-                  launchUrl(
-                    Uri.parse(
-                      'https://play.google.com/store/apps/details?id=com.appware.cloudSpot',
-                    ),
-                    mode: LaunchMode.externalApplication,
-                  );
-                },
-              ),
-            );
-          } else {
-            Logger.root.info('No update available');
-          }
-        });
-      }
-      if (autoBackup) {
-        final List<String> checked = [
-          AppLocalizations.of(context)!.settings,
-          AppLocalizations.of(context)!.downs,
-          AppLocalizations.of(context)!.playlists,
-        ];
-        final List playlistNames = Hive.box('settings').get(
-          'playlistNames',
-          defaultValue: ['Favorite Songs'],
-        ) as List;
-        final Map<String, List> boxNames = {
-          AppLocalizations.of(context)!.settings: ['settings'],
-          AppLocalizations.of(context)!.cache: ['cache'],
-          AppLocalizations.of(context)!.downs: ['downloads'],
-          AppLocalizations.of(context)!.playlists: playlistNames,
-        };
-        final String autoBackPath = Hive.box('settings').get(
-          'autoBackPath',
-          defaultValue: '',
-        ) as String;
-        if (autoBackPath == '') {
-          ExtStorageProvider.getExtStorage(
-            dirName: 'CloudSpot/Backups',
-            writeAccess: true,
-          ).then((value) {
-            Hive.box('settings').put('autoBackPath', value);
-            createBackup(
-              context,
-              checked,
-              boxNames,
-              path: value,
-              fileName: 'CloudSpot_AutoBackup',
-              showDialog: false,
-            );
-          });
-        } else {
-          createBackup(
-            context,
-            checked,
-            boxNames,
-            path: autoBackPath,
-            fileName: 'CloudSpot_AutoBackup',
-            showDialog: false,
-          ).then(
-            (value) => {
-              if (value.contains('No such file or directory'))
-                {
-                  ExtStorageProvider.getExtStorage(
-                    dirName: 'CloudSpot/Backups',
-                    writeAccess: true,
-                  ).then(
-                    (value) {
-                      Hive.box('settings').put('autoBackPath', value);
-                      createBackup(
-                        context,
-                        checked,
-                        boxNames,
-                        path: value,
-                        fileName: 'CloudSpot_AutoBackup',
-                      );
-                    },
-                  ),
-                },
-            },
-          );
-        }
-      }
-    });
-    downloadChecker();
-  }
+  // void checkVersion() {
+  //   PackageInfo.fromPlatform().then((PackageInfo packageInfo) {
+  //     appVersion = packageInfo.version;
+  //
+  //     if (checkUpdate) {
+  //       Logger.root.info('Checking for update');
+  //       GitHub.getLatestVersion().then((String version) async {
+  //         if (compareVersion(version, appVersion!)) {
+  //           Logger.root.info('Update available');
+  //           ShowSnackBar().showSnackBar(
+  //             context,
+  //             AppLocalizations.of(context)!.updateAvailable,
+  //             duration: const Duration(seconds: 15),
+  //             action: SnackBarAction(
+  //               textColor: Theme.of(context).colorScheme.secondary,
+  //               label: AppLocalizations.of(context)!.update,
+  //               onPressed: () async {
+  //                 if (Platform.isAndroid) {
+  //                   List? abis = await Hive.box('settings').get('supportedAbis')
+  //                       as List?;
+  //
+  //                   if (abis == null) {
+  //                     final DeviceInfoPlugin deviceInfo = DeviceInfoPlugin();
+  //                     final AndroidDeviceInfo androidDeviceInfo =
+  //                         await deviceInfo.androidInfo;
+  //                     abis = androidDeviceInfo.supportedAbis;
+  //                     await Hive.box('settings').put('supportedAbis', abis);
+  //                   }
+  //                   if (abis.contains('arm64')) {
+  //                   } else if (abis.contains('armeabi')) {}
+  //                 }
+  //                 Navigator.pop(context);
+  //                 launchUrl(
+  //                   Uri.parse(
+  //                     'https://play.google.com/store/apps/details?id=com.appware.cloudSpot',
+  //                   ),
+  //                   mode: LaunchMode.externalApplication,
+  //                 );
+  //               },
+  //             ),
+  //           );
+  //         } else {
+  //           Logger.root.info('No update available');
+  //         }
+  //       });
+  //     }
+  //     if (autoBackup) {
+  //       final List<String> checked = [
+  //         AppLocalizations.of(context)!.settings,
+  //         AppLocalizations.of(context)!.downs,
+  //         AppLocalizations.of(context)!.playlists,
+  //       ];
+  //       final List playlistNames = Hive.box('settings').get(
+  //         'playlistNames',
+  //         defaultValue: ['Favorite Songs'],
+  //       ) as List;
+  //       final Map<String, List> boxNames = {
+  //         AppLocalizations.of(context)!.settings: ['settings'],
+  //         AppLocalizations.of(context)!.cache: ['cache'],
+  //         AppLocalizations.of(context)!.downs: ['downloads'],
+  //         AppLocalizations.of(context)!.playlists: playlistNames,
+  //       };
+  //       final String autoBackPath = Hive.box('settings').get(
+  //         'autoBackPath',
+  //         defaultValue: '',
+  //       ) as String;
+  //       if (autoBackPath == '') {
+  //         ExtStorageProvider.getExtStorage(
+  //           dirName: 'CloudSpot/Backups',
+  //           writeAccess: true,
+  //         ).then((value) {
+  //           Hive.box('settings').put('autoBackPath', value);
+  //           createBackup(
+  //             context,
+  //             checked,
+  //             boxNames,
+  //             path: value,
+  //             fileName: 'CloudSpot_AutoBackup',
+  //             showDialog: false,
+  //           );
+  //         });
+  //       } else {
+  //         createBackup(
+  //           context,
+  //           checked,
+  //           boxNames,
+  //           path: autoBackPath,
+  //           fileName: 'CloudSpot_AutoBackup',
+  //           showDialog: false,
+  //         ).then(
+  //           (value) => {
+  //             if (value.contains('No such file or directory'))
+  //               {
+  //                 ExtStorageProvider.getExtStorage(
+  //                   dirName: 'CloudSpot/Backups',
+  //                   writeAccess: true,
+  //                 ).then(
+  //                   (value) {
+  //                     Hive.box('settings').put('autoBackPath', value);
+  //                     createBackup(
+  //                       context,
+  //                       checked,
+  //                       boxNames,
+  //                       path: value,
+  //                       fileName: 'CloudSpot_AutoBackup',
+  //                     );
+  //                   },
+  //                 ),
+  //               },
+  //           },
+  //         );
+  //       }
+  //     }
+  //   });
+  //   downloadChecker();
+  // }
 
   @override
   void initState() {
     super.initState();
-    checkVersion();
+    // checkVersion();
   }
 
   @override

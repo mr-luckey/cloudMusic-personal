@@ -1044,46 +1044,46 @@ class NowPlayingStream extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
-                      // if (queue[queueStateIndex + index]
-                      //         .extras?['addedByAutoplay'] as bool? ??
-                      //     false)
-                      //   Column(
-                      //     mainAxisAlignment: MainAxisAlignment.end,
-                      //     children: [
-                      //       Row(
-                      //         crossAxisAlignment: CrossAxisAlignment.end,
-                      //         children: [
-                      //           RotatedBox(
-                      //             quarterTurns: 3,
-                      //             child: Text(
-                      //               AppLocalizations.of(context)!.addedBy,
-                      //               textAlign: TextAlign.start,
-                      //               style: const TextStyle(
-                      //                 fontSize: 5.0,
-                      //               ),
-                      //             ),
-                      //           ),
-                      //           RotatedBox(
-                      //             quarterTurns: 3,
-                      //             child: Text(
-                      //               AppLocalizations.of(context)!.autoplay,
-                      //               textAlign: TextAlign.start,
-                      //               style: TextStyle(
-                      //                 fontSize: 8.0,
-                      //                 color: Theme.of(context)
-                      //                     .colorScheme
-                      //                     .secondary,
-                      //                 fontWeight: FontWeight.w600,
-                      //               ),
-                      //             ),
-                      //           ),
-                      //         ],
-                      //       ),
-                      //       const SizedBox(
-                      //         height: 5.0,
-                      //       ),
-                      //     ],
-                      //   ),
+                      if (queue[queueStateIndex + index]
+                              .extras?['addedByAutoplay'] as bool? ??
+                          false)
+                        Column(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                RotatedBox(
+                                  quarterTurns: 3,
+                                  child: Text(
+                                    AppLocalizations.of(context)!.addedBy,
+                                    textAlign: TextAlign.start,
+                                    style: const TextStyle(
+                                      fontSize: 5.0,
+                                    ),
+                                  ),
+                                ),
+                                RotatedBox(
+                                  quarterTurns: 3,
+                                  child: Text(
+                                    AppLocalizations.of(context)!.autoplay,
+                                    textAlign: TextAlign.start,
+                                    style: TextStyle(
+                                      fontSize: 8.0,
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .secondary,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(
+                              height: 5.0,
+                            ),
+                          ],
+                        ),
                       Card(
                         elevation: 5,
                         margin: EdgeInsets.zero,

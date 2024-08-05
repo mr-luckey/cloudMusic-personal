@@ -98,56 +98,56 @@ class _AboutPageState extends State<AboutPage> {
                             noAction: true,
                           );
 
-                          GitHub.getLatestVersion().then(
-                            (String latestVersion) async {
-                              if (compareVersion(
-                                latestVersion,
-                                appVersion!,
-                              )) {
-                                ShowSnackBar().showSnackBar(
-                                  context,
-                                  AppLocalizations.of(context)!.updateAvailable,
-                                  duration: const Duration(seconds: 15),
-                                  action: SnackBarAction(
-                                    textColor:
-                                        Theme.of(context).colorScheme.secondary,
-                                    label: AppLocalizations.of(context)!.update,
-                                    onPressed: () async {
-                                      if (Platform.isAndroid) {
-                                        List? abis = await Hive.box('settings')
-                                            .get('supportedAbis') as List?;
-
-                                        if (abis == null) {
-                                          final DeviceInfoPlugin deviceInfo =
-                                              DeviceInfoPlugin();
-                                          final AndroidDeviceInfo
-                                              androidDeviceInfo =
-                                              await deviceInfo.androidInfo;
-                                          abis =
-                                              androidDeviceInfo.supportedAbis;
-                                          await Hive.box('settings')
-                                              .put('supportedAbis', abis);
-                                        }
-                                        if (abis.contains('arm64')) {
-                                        } else if (abis.contains('armeabi')) {}
-                                      }
-
-                                      /// The above code is using the Dart programming language.
-                                      Navigator.pop(context);
-                                    },
-                                  ),
-                                );
-                              } else {
-                                ShowSnackBar().showSnackBar(
-                                  context,
-                                  AppLocalizations.of(
-                                    context,
-                                  )!
-                                      .latest,
-                                );
-                              }
-                            },
-                          );
+                          // GitHub.getLatestVersion().then(
+                          //   (String latestVersion) async {
+                          //     if (compareVersion(
+                          //       latestVersion,
+                          //       appVersion!,
+                          //     )) {
+                          //       ShowSnackBar().showSnackBar(
+                          //         context,
+                          //         AppLocalizations.of(context)!.updateAvailable,
+                          //         duration: const Duration(seconds: 15),
+                          //         action: SnackBarAction(
+                          //           textColor:
+                          //               Theme.of(context).colorScheme.secondary,
+                          //           label: AppLocalizations.of(context)!.update,
+                          //           onPressed: () async {
+                          //             if (Platform.isAndroid) {
+                          //               List? abis = await Hive.box('settings')
+                          //                   .get('supportedAbis') as List?;
+                          //
+                          //               if (abis == null) {
+                          //                 final DeviceInfoPlugin deviceInfo =
+                          //                     DeviceInfoPlugin();
+                          //                 final AndroidDeviceInfo
+                          //                     androidDeviceInfo =
+                          //                     await deviceInfo.androidInfo;
+                          //                 abis =
+                          //                     androidDeviceInfo.supportedAbis;
+                          //                 await Hive.box('settings')
+                          //                     .put('supportedAbis', abis);
+                          //               }
+                          //               if (abis.contains('arm64')) {
+                          //               } else if (abis.contains('armeabi')) {}
+                          //             }
+                          //
+                          //             /// The above code is using the Dart programming language.
+                          //             Navigator.pop(context);
+                          //           },
+                          //         ),
+                          //       );
+                          //     } else {
+                          //       ShowSnackBar().showSnackBar(
+                          //         context,
+                          //         AppLocalizations.of(
+                          //           context,
+                          //         )!
+                          //             .latest,
+                          //       );
+                          //     }
+                          //   },
+                          // );
                         },
                         trailing: Text(
                           'v$appVersion',

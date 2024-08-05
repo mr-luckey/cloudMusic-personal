@@ -69,7 +69,7 @@ Future<void> openHiveBox(String boxName, {bool limit = false}) async {
     final String dirPath = dir.path;
     File dbFile = File('$dirPath/$boxName.hive');
     File lockFile = File('$dirPath/$boxName.lock');
-    if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
+    if (Platform.isWindows || Platform.isAndroid || Platform.isMacOS) {
       dbFile = File('$dirPath/BlackHole/$boxName.hive');
       lockFile = File('$dirPath/BlackHole/$boxName.lock');
     }
