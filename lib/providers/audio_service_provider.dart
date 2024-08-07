@@ -22,7 +22,8 @@ class AudioHandlerHelper {
       config: AudioServiceConfig(
         androidNotificationChannelId: 'com.appware.cloudSpot.channel.audio',
         androidNotificationChannelName: 'Cloud Spot',
-        androidNotificationIcon: 'drawable/ic_stat_music_note',
+        androidNotificationIcon: 'mipmap/ic_launcher',
+        // androidNotificationIcon: 'drawable/ic_stat_music_note',
         androidShowNotificationBadge: true,
         androidStopForegroundOnPause: false,
         // Hive.box('settings').get('stopServiceOnPause', defaultValue: true) as bool,
