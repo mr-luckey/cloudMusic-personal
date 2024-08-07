@@ -14,6 +14,7 @@ class BannerAdWidget extends StatefulWidget {
 class _BannerAdWidgetState extends State<BannerAdWidget> {
   late BannerAd _bannerAd;
   final List<String> _adUnitIds = [
+    //test ADS implemented replace with your ID
    // Banner Ad Unit ID 1
     'ca-app-pub-3940256099942544/9214589741',
     'ca-app-pub-3940256099942544/9214589741',
