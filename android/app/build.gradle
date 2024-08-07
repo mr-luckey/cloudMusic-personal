@@ -18,12 +18,12 @@ if (flutterRoot == null) {
 
 def flutterVersionCode = localProperties.getProperty('flutter.versionCode')
 if (flutterVersionCode == null) {
-    flutterVersionCode = '7'
+    flutterVersionCode = '10'
 }
 
 def flutterVersionName = localProperties.getProperty('flutter.versionName')
 if (flutterVersionName == null) {
-    flutterVersionName = '7.0'
+    flutterVersionName = '10.0'
 }
 
 apply plugin: 'com.android.application'
@@ -32,7 +32,7 @@ apply from: "$flutterRoot/packages/flutter_tools/gradle/flutter.gradle"
 
 
 android {
-    compileSdkVersion 35
+    compileSdkVersion 34
     ndkVersion "27.0.12077973"
     // buildToolsVersion "30.0.3"
     namespace 'com.appware.cloudSpot'
@@ -44,7 +44,7 @@ android {
     defaultConfig {
         applicationId "com.appware.cloudSpot"
         minSdkVersion flutter.minSdkVersion
-        targetSdkVersion 35
+        targetSdkVersion 34
         multiDexEnabled false
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName

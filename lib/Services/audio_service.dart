@@ -681,7 +681,7 @@ class AudioPlayerHandlerImpl extends BaseAudioHandler
   Future<void> updateQueue(List<MediaItem> newQueue) async {
     await _playlist.clear();
     await _playlist.addAll(_itemsToSources(newQueue));
-    // addLastQueue(newQueue);
+    addLastQueue(newQueue);
     // stationId = '';
     // stationNames = newQueue.map((e) => e.id).toList();
     // SaavnAPI()

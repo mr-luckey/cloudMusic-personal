@@ -6,11 +6,11 @@ class AdManager {
   static InterstitialAd? _interstitialAd1;
   static InterstitialAd? _interstitialAd2;
   static final List<String> _adUnitIds = [
-    '	ca-app-pub-3940256099942544/1033173712',
-    '	ca-app-pub-3940256099942544/1033173712',
+    // '	ca-app-pub-3940256099942544/1033173712',
+    // '	ca-app-pub-3940256099942544/1033173712',
 
-    // 'ca-app-pub-5561438827097019/7678519709', // Ad Unit ID 1
-    // 'ca-app-pub-5561438827097019/4741209644', // Ad Unit ID 2
+    'ca-app-pub-5561438827097019/7678519709', // Ad Unit ID 1
+    'ca-app-pub-5561438827097019/4741209644', // Ad Unit ID 2
   ];
 
   static int _currentAdIndex = 0;
