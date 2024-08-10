@@ -27,6 +27,7 @@ dependencies:
   device_info_plus: ^10.1.1
   # ffmpeg_kit_flutter_audio: ^6.0.3
 #  fading_edge_scrollview: ^3.0.0
+  facebook_audience_network: ^1.0.1
   file_picker: ^8.0.6
   flip_card: ^0.7.0
   flutter:
