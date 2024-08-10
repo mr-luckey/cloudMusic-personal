@@ -34,6 +34,7 @@ class _LikeButtonState extends State<LikeButton>
 
   @override
   void initState() {
+    AdManager.showInterstitialAd();
     super.initState();
 
     _controller = AnimationController(

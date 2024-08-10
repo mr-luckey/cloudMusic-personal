@@ -1,6 +1,7 @@
 // Coded by Naseer Ahmed
 
 import 'package:blackhole/CustomWidgets/snackbar.dart';
+import 'package:blackhole/G-Ads.dart/intersatail_ads.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:hive/hive.dart';
@@ -31,6 +32,7 @@ class _ArtistLikeButtonState extends State<ArtistLikeButton>
 
   @override
   void initState() {
+    AdManager.showInterstitialAd();
     super.initState();
 
     _controller = AnimationController(
@@ -73,6 +75,7 @@ class _ArtistLikeButtonState extends State<ArtistLikeButton>
             ? AppLocalizations.of(context)!.unlike
             : AppLocalizations.of(context)!.like,
         onPressed: () async {
+          AdManager.showInterstitialAd();
           if (!liked) {
             _controller.forward();
             likedArtists.addEntries(

@@ -1,3 +1,6 @@
+analyzer:
+  errors:
+    directives_ordering: ignore
 include: package:lint/analysis_options.yaml
 
 linter:

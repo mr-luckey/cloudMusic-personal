@@ -25,6 +25,7 @@ import 'package:metadata_god/metadata_god.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:receive_sharing_intent/receive_sharing_intent.dart';
 import 'package:sizer/sizer.dart';
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -50,11 +51,14 @@ Future<void> main() async {
 
   runApp(MyApp());
 }
+
 Future<void> setOptimalDisplayMode() async {
   await FlutterDisplayMode.setHighRefreshRate();
 }
+
 Future<void> startService() async {
   await initializeLogging();
+  AdManager.initialize();
   MetadataGod.initialize();
   final audioHandlerHelper = AudioHandlerHelper();
   final AudioPlayerHandler audioHandler =
@@ -62,6 +66,7 @@ Future<void> startService() async {
   GetIt.I.registerSingleton<AudioPlayerHandler>(audioHandler);
   GetIt.I.registerSingleton<MyTheme>(MyTheme());
 }
+
 Future<void> openHiveBox(String boxName, {bool limit = false}) async {
   final box = await Hive.openBox(boxName).onError((error, stackTrace) async {
     Logger.root.severe('Failed to open $boxName Box', error, stackTrace);
@@ -82,6 +87,7 @@ Future<void> openHiveBox(String boxName, {bool limit = false}) async {
     box.clear();
   }
 }
+
 class MyApp extends StatefulWidget {
   @override
   _MyAppState createState() => _MyAppState();
@@ -89,6 +95,7 @@ class MyApp extends StatefulWidget {
   static _MyAppState of(BuildContext context) =>
       context.findAncestorStateOfType<_MyAppState>()!;
 }
+
 class _MyAppState extends State<MyApp> {
   Locale _locale = const Locale('en', '');
   late StreamSubscription _intentDataStreamSubscription;
@@ -99,6 +106,7 @@ class _MyAppState extends State<MyApp> {
     _intentDataStreamSubscription.cancel();
     super.dispose();
   }
+
   @override
   void initState() {
     super.initState();

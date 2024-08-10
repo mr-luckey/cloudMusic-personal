@@ -31,6 +31,7 @@ class _MiniPlayerState extends State<MiniPlayer> {
     final bool rotated = screenHeight < screenWidth;
     return SafeArea(
       top: false,
+      bottom: true,
       child: SingleChildScrollView(
         child: StreamBuilder<MediaItem?>(
           stream: audioHandler.mediaItem,

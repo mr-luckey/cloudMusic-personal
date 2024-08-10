@@ -1,177 +1,7 @@
-// // Coded by Naseer Ahmed
-
-// // import 'dart:nativewrappers/_internal/vm/lib/math_patch.dart';
-
-// import 'dart:math';
-
-// import 'package:blackhole/CustomWidgets/drawer.dart';
-// import 'package:blackhole/CustomWidgets/on_hover.dart';
-// import 'package:blackhole/G-Ads.dart/banner-ads.dart';
-// import 'package:blackhole/Screens/Home/saavn.dart';
-// import 'package:blackhole/Screens/Search/search.dart';
-// import 'package:blackhole/Screens/YouTube/youtube_playlist.dart';
-// import 'package:blackhole/Services/youtube_services.dart';
-// import 'package:cached_network_image/cached_network_image.dart';
-// import 'package:carousel_slider/carousel_slider.dart';
-// import 'package:flutter/cupertino.dart';
-// import 'package:flutter/material.dart';
-// import 'package:flutter_gen/gen_l10n/app_localizations.dart';
-// import 'package:hive/hive.dart';
-
-// bool status = false;
-// List searchedList = Hive.box('cache').get('ytHome', defaultValue: []) as List;
-// List headList = Hive.box('cache').get('ytHomeHead', defaultValue: []) as List;
-
-// class YouTube extends StatefulWidget {
-//   const YouTube({super.key});
-
-//   @override
-//   _YouTubeState createState() => _YouTubeState();
-// }
-
-// class _YouTubeState extends State<YouTube>
-//     with AutomaticKeepAliveClientMixin<YouTube> {
-//   final ScrollController _scrollController = ScrollController();
-//   final TextEditingController _controller = TextEditingController();
-
-//   @override
-//   bool get wantKeepAlive => true;
-
-//   @override
-//   void initState() {
-//     if (!status) {
-//       YouTubeServices.instance.getMusicHome().then((value) {
-//         status = true;
-//         if (value.isNotEmpty) {
-//           setState(() {
-//             searchedList = value['body'] ?? [];
-//             headList = value['head'] ?? [];
-
-//             Hive.box('cache').put('ytHome', value['body']);
-//             Hive.box('cache').put('ytHomeHead', value['head']);
-//           });
-//         } else {
-//           status = false;
-//         }
-//       });
-//     }
-//     super.initState();
-//   }
-
-//   @override
-//   void dispose() {
-//     _controller.dispose();
-//     super.dispose();
-//   }
-
-//   @override
-//   Widget build(BuildContext cntxt) {
-//     super.build(context);
-//     final double screenWidth = MediaQuery.sizeOf(context).width;
-//     final bool rotated = MediaQuery.sizeOf(context).height < screenWidth;
-//     double boxSize = !rotated
-//         ? MediaQuery.sizeOf(context).width / 2
-//         : MediaQuery.sizeOf(context).height / 2.5;
-//     if (boxSize > 250) boxSize = 250;
-//     return Scaffold(
-//       resizeToAvoidBottomInset: false,
-//       backgroundColor: Colors.transparent,
-//       body: SafeArea(
-//         child: Stack(
-//           children: [
-//             if (searchedList.isEmpty)
-//               const Center(
-//                 child: CircularProgressIndicator(),
-//               )
-//             else
-//               Center(
-//                 //FIXME: need to show some songs like youtube
-//                 child: Column(
-//                   mainAxisAlignment: MainAxisAlignment.center,
-//                   children: [
-//                     Icon(
-//                       Icons.music_note,
-//                       size: 100,
-//                       color: Colors.white54,
-//                     ),
-//                     Text(
-//                       'Serch songs on YouTube & YT Music',
-//                       style: TextStyle(color: Colors.white54, fontSize: 20),
-//                     )
-//                   ],
-//                 ),
-//               ),
-//             GestureDetector(
-//               child: Container(
-//                 width: MediaQuery.sizeOf(context).width,
-//                 height: 55.0,
-//                 padding: const EdgeInsets.all(5.0),
-//                 margin:
-//                     const EdgeInsets.symmetric(horizontal: 15.0, vertical: 5.0),
-//                 // margin: EdgeInsets.zero,
-//                 decoration: BoxDecoration(
-//                   borderRadius: BorderRadius.circular(
-//                     10.0,
-//                   ),
-//                   color: Theme.of(context).primaryColor,
-//                   boxShadow: const [
-//                     BoxShadow(
-//                       // color: Colors.white60,
-//                       blurRadius: 5.0,
-//                       offset: Offset(1.5, 1.5),
-//                       // shadow direction: bottom right
-//                     ),
-//                   ],
-//                 ),
-//                 child: Row(
-//                   children: [
-//                     SizedBox(
-//                       width: 10,
-//                     ),
-//                     Icon(Icons.search),
-//                     // homeDrawer(context: context),
-//                     const SizedBox(
-//                       width: 15.0,
-//                     ),
-//                     Text(
-//                       AppLocalizations.of(
-//                         context,
-//                       )!
-//                           .searchYt,
-//                       style: TextStyle(
-//                         fontSize: 20.0,
-//                         color: Theme.of(context).textTheme.bodySmall!.color,
-//                         fontWeight: FontWeight.normal,
-//                       ),
-//                     ),
-//                   ],
-//                 ),
-//               ),
-//               onTap: () => Navigator.push(
-//                 context,
-//                 MaterialPageRoute(
-//                   builder: (context) => SearchPage(
-//                     query: '',
-//                     fromHome: true,
-//                     searchType: Hive.box('settings')
-//                             .get('searchYtMusic', defaultValue: true) as bool
-//                         ? 'ytm'
-//                         : 'yt',
-//                     autofocus: true,
-//                   ),
-//                 ),
-//               ),
-//             ),
-//           ],
-//         ),
-//       ),
-//     );
-//   }
-// }
-// Coded by Naseer Ahmed
-
 import 'package:blackhole/CustomWidgets/drawer.dart';
 import 'package:blackhole/CustomWidgets/on_hover.dart';
+import 'package:blackhole/G-Ads.dart/banner-ads.dart';
+import 'package:blackhole/G-Ads.dart/intersatail_ads.dart';
 import 'package:blackhole/Screens/Search/search.dart';
 import 'package:blackhole/Screens/YouTube/youtube_playlist.dart';
 import 'package:blackhole/Services/youtube_services.dart';
@@ -194,19 +24,7 @@ class YouTube extends StatefulWidget {
 
 class _YouTubeState extends State<YouTube>
     with AutomaticKeepAliveClientMixin<YouTube> {
-  // List ytSearch =
-  // Hive.box('settings').get('ytSearch', defaultValue: []) as List;
-  // bool showHistory =
-  // Hive.box('settings').get('showHistory', defaultValue: true) as bool;
   final TextEditingController _controller = TextEditingController();
-
-  // int _currentPage = 0;
-  // final PageController _pageController = PageController(
-  // viewportFraction:
-  //     (Platform.isWindows || Platform.isLinux || Platform.isMacOS)
-  //         ? 0.385
-  //         : 1.0,
-  // );
 
   @override
   bool get wantKeepAlive => true;
@@ -231,6 +49,7 @@ class _YouTubeState extends State<YouTube>
     }
 
     super.initState();
+    AdManager.showInterstitialAd();
   }
 
   @override
@@ -320,6 +139,7 @@ class _YouTubeState extends State<YouTube>
                           ),
                         ),
                       ),
+                    //TODO: banner ads
                     ListView.builder(
                       itemCount: searchedList.length,
                       physics: const BouncingScrollPhysics(),
@@ -351,6 +171,13 @@ class _YouTubeState extends State<YouTube>
                                 ],
                               ),
                             ),
+                            BannerAdWidget(index: 4),
+                            //TODO: banner ads
+                            // Container(
+                            //   height: 10,
+                            //   width: double.infinity,
+                            //   color: Colors.blue,
+                            // ),
                             SizedBox(
                               height: boxSize + 10,
                               width: double.infinity,
@@ -388,38 +215,6 @@ class _YouTubeState extends State<YouTube>
                                           ),
                                         ),
                                       );
-                                      //FIXME: previous code below
-                                      // item['type'] == 'video'
-                                      //     ? Navigator.push(
-                                      //         context,
-                                      //         PageRouteBuilder(
-                                      //           opaque: false,
-                                      //           pageBuilder: (_, __, ___) =>
-                                      //               SearchPage(
-                                      //             query:
-                                      //                 item['title'].toString(),
-                                      //             searchType:
-                                      //                 Hive.box('settings').get(
-                                      //               'searchYtMusic',
-                                      //               defaultValue: true,
-                                      //             ) as bool
-                                      //                     ? 'ytm'
-                                      //                     : 'yt',
-                                      //             fromDirectSearch: true,
-                                      //           ),
-                                      //         ),
-                                      //       )
-                                      //     : Navigator.push(
-                                      //         context,
-                                      //         PageRouteBuilder(
-                                      //           opaque: false,
-                                      //           pageBuilder: (_, __, ___) =>
-                                      //               YouTubePlaylist(
-                                      //             playlistId: item['playlistId']
-                                      //                 .toString(),
-                                      //           ),
-                                      //         ),
-                                      //       );
                                     },
                                     child: SizedBox(
                                       width: item['type'] != 'playlist'
@@ -428,6 +223,12 @@ class _YouTubeState extends State<YouTube>
                                       child: HoverBox(
                                         child: Column(
                                           children: [
+                                            //TODO: check
+                                            // Container(
+                                            //   height: 10,
+                                            //   width: double.infinity,
+                                            //   color: Colors.blue,
+                                            // ),
                                             Expanded(
                                               child: Stack(
                                                 children: [
