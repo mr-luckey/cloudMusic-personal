@@ -24,13 +24,14 @@ import 'package:logging/logging.dart';
 import 'package:metadata_god/metadata_god.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:receive_sharing_intent/receive_sharing_intent.dart';
-import 'package:sizer/sizer.dart';
+import 'package:sizer/sizer.dart' show SizerUtil;
+// import 'package:sizer/sizer.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   MobileAds.instance.initialize();
-  AdManager.initialize();
+  // AdManager.initialize();
   if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
     await Hive.initFlutter('BlackHole/Database');
   } else if (Platform.isIOS) {
@@ -58,7 +59,7 @@ Future<void> setOptimalDisplayMode() async {
 
 Future<void> startService() async {
   await initializeLogging();
-  AdManager.initialize();
+  // AdManager.initialize();
   MetadataGod.initialize();
   final audioHandlerHelper = AudioHandlerHelper();
   final AudioPlayerHandler audioHandler =

@@ -2,8 +2,6 @@
 
 import 'package:blackhole/APIs/api.dart';
 import 'package:blackhole/CustomWidgets/snackbar.dart';
-import 'package:blackhole/G-Ads.dart/Reward_ads.dart';
-import 'package:blackhole/G-Ads.dart/intersatail_ads.dart';
 import 'package:blackhole/Services/download.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
@@ -356,7 +354,7 @@ class _AlbumDownloadButtonState extends State<AlbumDownloadButton> {
                       color: Theme.of(context).iconTheme.color,
                       tooltip: AppLocalizations.of(context)!.down,
                       onPressed: () async {
-                        AdManager.showInterstitialAd();
+                        // AdManager.showInterstitialAd();
                         ShowSnackBar().showSnackBar(
                           context,
                           '${AppLocalizations.of(context)!.downingAlbum} "${widget.albumName}"',

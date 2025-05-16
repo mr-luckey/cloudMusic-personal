@@ -1,41 +1,21 @@
 // Coded by Naseer Ahmed
 
 import 'dart:async';
-import 'dart:io';
 
-import 'package:blackhole/CustomWidgets/bottom_nav_bar.dart';
-import 'package:blackhole/CustomWidgets/drawer.dart';
 import 'package:blackhole/CustomWidgets/gradient_containers.dart';
 import 'package:blackhole/CustomWidgets/miniplayer.dart';
-import 'package:blackhole/CustomWidgets/snackbar.dart';
-import 'package:blackhole/G-Ads.dart/intersatail_ads.dart';
-import 'package:blackhole/Helpers/backup_restore.dart';
-import 'package:blackhole/Helpers/downloads_checker.dart';
-import 'package:blackhole/Helpers/github.dart';
-import 'package:blackhole/Helpers/route_handler.dart';
-import 'package:blackhole/Helpers/update.dart';
-import 'package:blackhole/Screens/Common/routes.dart';
+// import 'package:blackhole/G-Ads.dart/intersatail_ads.dart';
 import 'package:blackhole/Screens/Home/home_screen.dart';
 import 'package:blackhole/Screens/Library/library.dart';
-import 'package:blackhole/Screens/LocalMusic/downed_songs.dart';
-import 'package:blackhole/Screens/LocalMusic/downed_songs_desktop.dart';
-import 'package:blackhole/Screens/Player/audioplayer.dart';
 import 'package:blackhole/Screens/Settings/new_settings_page.dart';
-import 'package:blackhole/Screens/Top Charts/top.dart';
 import 'package:blackhole/Screens/YouTube/youtube_home.dart';
-import 'package:blackhole/Services/ext_storage_provider.dart';
-import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-import 'package:logging/logging.dart';
-import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
-import 'package:package_info_plus/package_info_plus.dart';
 import 'package:persistent_bottom_nav_bar/persistent_bottom_nav_bar.dart';
 // import 'package:persistent_bottom_nav_bar/persistent_tab_view.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 class HomePage extends StatefulWidget {
   @override
@@ -76,10 +56,10 @@ class _HomePageState extends State<HomePage> {
 
   void _startAdTimer() {
     _timer = Timer.periodic(Duration(seconds: 50), (Timer timer) {
-      print('i am loaded....................$_timer');
-      AdManager.showInterstitialAd();
-      print(
-          'i am loaded....................'); // Show the interstitial ad every 50 seconds
+      // print('i am loaded....................$_timer');
+      // AdManager.showInterstitialAd();
+      // print(
+      //     'i am loaded....................'); // Show the interstitial ad every 50 seconds
     });
   }
 
@@ -90,7 +70,7 @@ class _HomePageState extends State<HomePage> {
 
   @override
   void initState() {
-    AdManager.showInterstitialAd();
+    // AdManager.showInterstitialAd();
     _startAdTimer();
     super.initState();
 

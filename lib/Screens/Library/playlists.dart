@@ -610,7 +610,7 @@ class _PlaylistScreenState extends State<PlaylistScreen> {
                               value: 1,
                               child: Row(
                                 children: [
-                                  const Icon(MdiIcons.export),
+                                  Icon(MdiIcons.export),
                                   const SizedBox(width: 10.0),
                                   Text(
                                     AppLocalizations.of(context)!.export,
@@ -622,7 +622,7 @@ class _PlaylistScreenState extends State<PlaylistScreen> {
                               value: 2,
                               child: Row(
                                 children: [
-                                  const Icon(MdiIcons.share),
+                                  Icon(MdiIcons.share),
                                   const SizedBox(width: 10.0),
                                   Text(
                                     AppLocalizations.of(context)!.share,

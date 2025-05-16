@@ -12,7 +12,7 @@ import 'package:blackhole/CustomWidgets/like_button.dart';
 import 'package:blackhole/CustomWidgets/on_hover.dart';
 import 'package:blackhole/CustomWidgets/snackbar.dart';
 import 'package:blackhole/CustomWidgets/song_tile_trailing_menu.dart';
-import 'package:blackhole/G-Ads.dart/banner-ads.dart';
+// import 'package:blackhole/G-Ads.dart/banner-ads.dart';
 import 'package:blackhole/Helpers/extensions.dart';
 import 'package:blackhole/Helpers/format.dart';
 import 'package:blackhole/Models/image_quality.dart';
@@ -178,9 +178,9 @@ class _SaavnHomePageState extends State<SaavnHomePage>
                           );
                         },
                       ),
-                      const BannerAdWidget(
-                        index: 2,
-                      ),
+                      // const BannerAdWidget(
+                      //   index: 2,
+                      // ),
 
                       //TODO: banner ads implementation
                     ],
@@ -201,9 +201,9 @@ class _SaavnHomePageState extends State<SaavnHomePage>
                   valueListenable: Hive.box('settings').listenable(),
                   child: Column(
                     children: [
-                      BannerAdWidget(
-                        index: 0,
-                      ),
+                      // BannerAdWidget(
+                      //   index: 0,
+                      // ),
                       //TODO: banner ads implementation...
                       GestureDetector(
                         child: Row(
@@ -351,9 +351,9 @@ class _SaavnHomePageState extends State<SaavnHomePage>
                           },
                         ),
                       ),
-                      const BannerAdWidget(
-                        index: 1,
-                      ),
+                      // const BannerAdWidget(
+                      //   index: 1,
+                      // ),
                       // GetBuilder<AdController>(
                       //   builder: (_) {
                       //     return AdmobBanner(
@@ -920,9 +920,9 @@ class _SaavnHomePageState extends State<SaavnHomePage>
                             },
                           ),
                         ),
-                        const BannerAdWidget(
-                          index: 3,
-                        ),
+                        // const BannerAdWidget(
+                        //   index: 3,
+                        // ),
                       ],
                     );
             },

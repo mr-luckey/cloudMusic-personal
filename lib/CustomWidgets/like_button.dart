@@ -2,7 +2,7 @@
 
 import 'package:audio_service/audio_service.dart';
 import 'package:blackhole/CustomWidgets/snackbar.dart';
-import 'package:blackhole/G-Ads.dart/intersatail_ads.dart';
+// import 'package:blackhole/G-Ads.dart/intersatail_ads.dart';
 import 'package:blackhole/Helpers/playlist.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
@@ -34,7 +34,7 @@ class _LikeButtonState extends State<LikeButton>
 
   @override
   void initState() {
-    AdManager.showInterstitialAd();
+    // AdManager.showInterstitialAd();
     super.initState();
 
     _controller = AnimationController(
@@ -85,7 +85,7 @@ class _LikeButtonState extends State<LikeButton>
             ? AppLocalizations.of(context)!.unlike
             : AppLocalizations.of(context)!.like,
         onPressed: () async {
-          AdManager.showInterstitialAd();
+          // AdManager.showInterstitialAd();
 
           liked
               ? removeLiked(
@@ -115,7 +115,7 @@ class _LikeButtonState extends State<LikeButton>
                 textColor: Theme.of(context).colorScheme.secondary,
                 label: AppLocalizations.of(context)!.undo,
                 onPressed: () {
-                  AdManager.showInterstitialAd();
+                  // AdManager.showInterstitialAd();
 
                   // InterstitialAdWidget();
                   liked

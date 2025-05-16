@@ -49,7 +49,7 @@ class _YouTubeState extends State<YouTube>
     }
 
     super.initState();
-    AdManager.showInterstitialAd();
+    // AdManager.showInterstitialAd();
   }
 
   @override
@@ -75,8 +75,8 @@ class _YouTubeState extends State<YouTube>
           children: [
             if (searchedList.isEmpty)
               const Center(
-                child: CircularProgressIndicator(),
-              )
+                  // child: CircularProgressIndicator(),
+                  )
             else
               SingleChildScrollView(
                 physics: const BouncingScrollPhysics(),
@@ -171,7 +171,7 @@ class _YouTubeState extends State<YouTube>
                                 ],
                               ),
                             ),
-                            BannerAdWidget(index: 4),
+                            // BannerAdWidget(index: 4),
                             //TODO: banner ads
                             // Container(
                             //   height: 10,
