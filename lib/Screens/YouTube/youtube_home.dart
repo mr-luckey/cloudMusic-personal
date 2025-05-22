@@ -9,6 +9,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:gif/gif.dart';
 import 'package:hive/hive.dart';
 
 bool status = false;
@@ -16,15 +17,15 @@ List searchedList = Hive.box('cache').get('ytHome', defaultValue: []) as List;
 List headList = Hive.box('cache').get('ytHomeHead', defaultValue: []) as List;
 
 class YouTube extends StatefulWidget {
-  const YouTube({super.key});
-
+  YouTube({super.key});
   @override
   _YouTubeState createState() => _YouTubeState();
 }
 
 class _YouTubeState extends State<YouTube>
-    with AutomaticKeepAliveClientMixin<YouTube> {
+    with AutomaticKeepAliveClientMixin<YouTube>, TickerProviderStateMixin {
   final TextEditingController _controller = TextEditingController();
+  late final GifController gifController;
 
   @override
   bool get wantKeepAlive => true;
@@ -47,9 +48,10 @@ class _YouTubeState extends State<YouTube>
         }
       });
     }
+    gifController = GifController(vsync: this);
 
     super.initState();
-    // AdManager.showInterstitialAd();
+    AdManager.showInterstitialAd();
   }
 
   @override
@@ -74,9 +76,31 @@ class _YouTubeState extends State<YouTube>
         child: Stack(
           children: [
             if (searchedList.isEmpty)
-              const Center(
+              Center(
                   // child: CircularProgressIndicator(),
-                  )
+                  //TODO:add gif here
+                  child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Gif(
+                    image: AssetImage('assets/search1.gif'),
+                    autostart: Autostart.loop,
+                    controller: gifController,
+                    color: Theme.of(context).colorScheme.secondary,
+
+                    width: 100,
+                    height: 100,
+                    // controller: AnimationController(TikerProvider()).repeat(),
+                  ),
+                  Text(
+                    'Search Music on Youtube',
+                    style: TextStyle(
+                        color: Theme.of(context).colorScheme.secondary,
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold),
+                  ),
+                ],
+              ))
             else
               SingleChildScrollView(
                 physics: const BouncingScrollPhysics(),
@@ -171,13 +195,13 @@ class _YouTubeState extends State<YouTube>
                                 ],
                               ),
                             ),
-                            // BannerAdWidget(index: 4),
-                            //TODO: banner ads
-                            // Container(
-                            //   height: 10,
-                            //   width: double.infinity,
-                            //   color: Colors.blue,
-                            // ),
+                            BannerAdWidget(index: 4),
+                            // TODO: banner ads
+                            Container(
+                              height: 10,
+                              width: double.infinity,
+                              color: Colors.blue,
+                            ),
                             SizedBox(
                               height: boxSize + 10,
                               width: double.infinity,
@@ -406,6 +430,8 @@ class _YouTubeState extends State<YouTube>
                     const EdgeInsets.symmetric(horizontal: 15.0, vertical: 5.0),
                 // margin: EdgeInsets.zero,
                 decoration: BoxDecoration(
+                  border: Border.all(
+                      color: Theme.of(context).colorScheme.secondary),
                   borderRadius: BorderRadius.circular(
                     10.0,
                   ),

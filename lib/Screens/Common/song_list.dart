@@ -12,6 +12,7 @@ import 'package:blackhole/CustomWidgets/like_button.dart';
 import 'package:blackhole/CustomWidgets/playlist_popupmenu.dart';
 import 'package:blackhole/CustomWidgets/snackbar.dart';
 import 'package:blackhole/CustomWidgets/song_tile_trailing_menu.dart';
+import 'package:blackhole/G-Ads.dart/intersatail_ads.dart';
 // import 'package:blackhole/G-Ads.dart/intersatail_ads.dart';
 import 'package:blackhole/Helpers/extensions.dart';
 import 'package:blackhole/Models/url_image_generator.dart';
@@ -306,7 +307,7 @@ class _SongsListPageState extends State<SongsListPage> {
                           ],
                         ),
                         onTap: () {
-                          // AdManager.showInterstitialAd();
+                          AdManager.showInterstitialAd();
                           PlayerInvoke.init(
                             songsList: songList,
                             index: songList.indexWhere(

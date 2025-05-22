@@ -52,17 +52,17 @@ android {
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
     }
-//     signingConfigs {
-// //        useProguard true
+     signingConfigs {
+ //        useProguard true
 
 
-//         // release {
-//         //     keyAlias keystoreProperties['keyAlias']
-//         //     keyPassword keystoreProperties['keyPassword']
-//         //     storeFile keystoreProperties['storeFile'] ? file(keystoreProperties['storeFile']) : null
-//         //     storePassword keystoreProperties['storePassword']
-//         // }
-//     }
+         // release {
+         //     keyAlias keystoreProperties['keyAlias']
+         //     keyPassword keystoreProperties['keyPassword']
+         //     storeFile keystoreProperties['storeFile'] ? file(keystoreProperties['storeFile']) : null
+         //     storePassword keystoreProperties['storePassword']
+         // }
+     }
     buildTypes {
         debug {
             // To enable the NDK debugging tool, uncomment the following line
@@ -79,7 +79,7 @@ android {
 //             minifyEnabled true
 //             shrinkResources true
 // //            proguardFile 'proguard-rules.pro'
-//             // signingConfig signingConfigs.release
+//             signingConfig signingConfigs.release
 //         }
 
     }

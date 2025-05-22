@@ -61,7 +61,7 @@ dependencies:
   package_info_plus: ^8.2.1
   palette_generator: ^0.3.3+6
   path_provider: ^2.1.5
-  permission_handler: ^11.3.1
+  permission_handler: ^12.0.0+1
   persistent_bottom_nav_bar: ^6.2.1
     # git:
     #   url: https://github.com/Sangwan5688/PersistentBottomNavBar
@@ -78,6 +78,8 @@ dependencies:
   audiotagger:
     git:
       url: https://github.com/Samurai016/Audiotagger.git
+  gif: ^2.3.0
+  facebook_audience_network: ^1.0.1
     #  ref: 90f2db5 
     #  url: https://github.com/Samurai016/Audiotagger.git
     #  ref: 90f2db5

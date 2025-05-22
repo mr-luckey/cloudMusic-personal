@@ -4,9 +4,11 @@ import 'dart:async';
 
 import 'package:blackhole/CustomWidgets/gradient_containers.dart';
 import 'package:blackhole/CustomWidgets/miniplayer.dart';
+import 'package:blackhole/G-Ads.dart/intersatail_ads.dart';
 // import 'package:blackhole/G-Ads.dart/intersatail_ads.dart';
 import 'package:blackhole/Screens/Home/home_screen.dart';
 import 'package:blackhole/Screens/Library/library.dart';
+import 'package:blackhole/Screens/LocalMusic/homeScreen_song.dart';
 import 'package:blackhole/Screens/Settings/new_settings_page.dart';
 import 'package:blackhole/Screens/YouTube/youtube_home.dart';
 import 'package:flutter/cupertino.dart';
@@ -55,9 +57,9 @@ class _HomePageState extends State<HomePage> {
   }
 
   void _startAdTimer() {
-    _timer = Timer.periodic(Duration(seconds: 50), (Timer timer) {
-      // print('i am loaded....................$_timer');
-      // AdManager.showInterstitialAd();
+    _timer = Timer.periodic(Duration(seconds: 5), (Timer timer) {
+      print('i am loaded....................$_timer');
+      AdManager.showInterstitialAd();
       // print(
       //     'i am loaded....................'); // Show the interstitial ad every 50 seconds
     });
@@ -70,7 +72,7 @@ class _HomePageState extends State<HomePage> {
 
   @override
   void initState() {
-    // AdManager.showInterstitialAd();
+    AdManager.showInterstitialAd();
     _startAdTimer();
     super.initState();
 
@@ -87,8 +89,9 @@ class _HomePageState extends State<HomePage> {
 
   List<Widget> _buildScreens() {
     return [
+      // HomescreenSong(),
       const HomeScreen(),
-      const YouTube(),
+      YouTube(),
       const LibraryPage(),
       NewSettingsPage(callback: callback),
     ];

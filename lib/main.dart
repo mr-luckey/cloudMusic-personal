@@ -31,7 +31,7 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   MobileAds.instance.initialize();
-  // AdManager.initialize();
+  AdManager.initialize();
   if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
     await Hive.initFlutter('BlackHole/Database');
   } else if (Platform.isIOS) {
@@ -59,7 +59,7 @@ Future<void> setOptimalDisplayMode() async {
 
 Future<void> startService() async {
   await initializeLogging();
-  // AdManager.initialize();
+  AdManager.initialize();
   MetadataGod.initialize();
   final audioHandlerHelper = AudioHandlerHelper();
   final AudioPlayerHandler audioHandler =
