@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
-import 'package:blackhole/G-Ads.dart/intersatail_ads.dart';
+import 'package:blackhole/G-Ads.dart/ad_manager.dart';
+// import 'package:blackhole/G-Ads.dart/intersatail_ads.dart';
 import 'package:blackhole/Helpers/config.dart';
 import 'package:blackhole/Helpers/handle_native.dart';
 import 'package:blackhole/Helpers/import_export_playlist.dart';
@@ -31,7 +32,7 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   MobileAds.instance.initialize();
-  AdManager.initialize();
+  AdManager().initialize();
   if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
     await Hive.initFlutter('BlackHole/Database');
   } else if (Platform.isIOS) {
@@ -59,7 +60,6 @@ Future<void> setOptimalDisplayMode() async {
 
 Future<void> startService() async {
   await initializeLogging();
-  AdManager.initialize();
   MetadataGod.initialize();
   final audioHandlerHelper = AudioHandlerHelper();
   final AudioPlayerHandler audioHandler =

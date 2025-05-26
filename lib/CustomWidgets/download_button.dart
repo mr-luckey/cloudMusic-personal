@@ -65,7 +65,7 @@ class _DownloadButtonState extends State<DownloadButton> {
                 color: Theme.of(context).colorScheme.secondary,
                 iconSize: widget.size ?? 24.0,
                 onPressed: () {
-                  AdManager.showInterstitialAd();
+                  // AdManager.showInterstitialAd();
                   // rewardedAdManager.showRewardedAd(context, () {
                   down.prepareDownload(context, widget.data);
                   // });
@@ -85,7 +85,7 @@ class _DownloadButtonState extends State<DownloadButton> {
                       // rewardedAdManager.showRewardedAd(context, () {
                       down.prepareDownload(context, widget.data);
                       // });
-                      AdManager.showInterstitialAd();
+                      // AdManager.showInterstitialAd();
                       // down.prepareDownload(context, widget.data);
                     },
                   )
@@ -222,7 +222,7 @@ class _MultiDownloadButtonState extends State<MultiDownloadButton> {
                       iconSize: 25.0,
                       tooltip: AppLocalizations.of(context)!.down,
                       onPressed: () async {
-                        AdManager.showInterstitialAd();
+                        // AdManager.showInterstitialAd();
                         // rewardedAdManager.showRewardedAd(context, () async {
                         for (final items in widget.data) {
                           down.prepareDownload(

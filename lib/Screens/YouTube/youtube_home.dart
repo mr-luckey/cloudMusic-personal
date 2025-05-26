@@ -51,7 +51,7 @@ class _YouTubeState extends State<YouTube>
     gifController = GifController(vsync: this);
 
     super.initState();
-    AdManager.showInterstitialAd();
+    // AdManager.showInterstitialAd();
   }
 
   @override
@@ -195,7 +195,7 @@ class _YouTubeState extends State<YouTube>
                                 ],
                               ),
                             ),
-                            BannerAdWidget(index: 4),
+                            // BannerAdWidget(index: 4),
                             // TODO: banner ads
                             Container(
                               height: 10,

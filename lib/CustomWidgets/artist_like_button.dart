@@ -33,7 +33,7 @@ class _ArtistLikeButtonState extends State<ArtistLikeButton>
 
   @override
   void initState() {
-    AdManager.showInterstitialAd();
+    // AdManager.showInterstitialAd();
     super.initState();
 
     _controller = AnimationController(
@@ -76,7 +76,7 @@ class _ArtistLikeButtonState extends State<ArtistLikeButton>
             ? AppLocalizations.of(context)!.unlike
             : AppLocalizations.of(context)!.like,
         onPressed: () async {
-          AdManager.showInterstitialAd();
+          // AdManager.showInterstitialAd();
           if (!liked) {
             _controller.forward();
             likedArtists.addEntries(

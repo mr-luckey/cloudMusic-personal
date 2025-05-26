@@ -307,7 +307,7 @@ class _SongsListPageState extends State<SongsListPage> {
                           ],
                         ),
                         onTap: () {
-                          AdManager.showInterstitialAd();
+                          // AdManager.showInterstitialAd();
                           PlayerInvoke.init(
                             songsList: songList,
                             index: songList.indexWhere(

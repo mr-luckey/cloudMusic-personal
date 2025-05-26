@@ -59,7 +59,7 @@ class _HomePageState extends State<HomePage> {
   void _startAdTimer() {
     _timer = Timer.periodic(Duration(seconds: 5), (Timer timer) {
       print('i am loaded....................$_timer');
-      AdManager.showInterstitialAd();
+      // AdManager.showInterstitialAd();
       // print(
       //     'i am loaded....................'); // Show the interstitial ad every 50 seconds
     });
@@ -72,7 +72,7 @@ class _HomePageState extends State<HomePage> {
 
   @override
   void initState() {
-    AdManager.showInterstitialAd();
+    // AdManager.showInterstitialAd();
     _startAdTimer();
     super.initState();
 

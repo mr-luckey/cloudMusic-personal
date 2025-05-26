@@ -5,11 +5,11 @@ if (localPropertiesFile.exists()) {
         localProperties.load(reader)
     }
 }
-// def keystoreProperties = new Properties()
-// def keystorePropertiesFile = rootProject.file('key.properties')
-// if (keystorePropertiesFile.exists()) {
-//     keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
-// }
+def keystoreProperties = new Properties()
+def keystorePropertiesFile = rootProject.file('key.properties')
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+}
 
 def flutterRoot = localProperties.getProperty('flutter.sdk')
 if (flutterRoot == null) {
@@ -18,12 +18,12 @@ if (flutterRoot == null) {
 
 def flutterVersionCode = localProperties.getProperty('flutter.versionCode')
 if (flutterVersionCode == null) {
-    flutterVersionCode = '13'
+    flutterVersionCode = '15'
 }
 
 def flutterVersionName = localProperties.getProperty('flutter.versionName')
 if (flutterVersionName == null) {
-    flutterVersionName = '13.0'
+    flutterVersionName = '15.0'
 }
 // apply plugin: 'com.android.application'
 // apply plugin: 'kotlin-android'
@@ -56,12 +56,12 @@ android {
  //        useProguard true
 
 
-         // release {
-         //     keyAlias keystoreProperties['keyAlias']
-         //     keyPassword keystoreProperties['keyPassword']
-         //     storeFile keystoreProperties['storeFile'] ? file(keystoreProperties['storeFile']) : null
-         //     storePassword keystoreProperties['storePassword']
-         // }
+         release {
+             keyAlias keystoreProperties['keyAlias']
+             keyPassword keystoreProperties['keyPassword']
+             storeFile keystoreProperties['storeFile'] ? file(keystoreProperties['storeFile']) : null
+             storePassword keystoreProperties['storePassword']
+         }
      }
     buildTypes {
         debug {
@@ -73,14 +73,14 @@ android {
             shrinkResources false
             signingConfig signingConfigs.debug
         }
-//         release {
-// //            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
-// //            useProguard true
-//             minifyEnabled true
-//             shrinkResources true
-// //            proguardFile 'proguard-rules.pro'
-//             signingConfig signingConfigs.release
-//         }
+        release {
+//            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+//            useProguard true
+            minifyEnabled true
+            shrinkResources true
+//            proguardFile 'proguard-rules.pro'
+            signingConfig signingConfigs.release
+        }
 
     }
 
