@@ -34,7 +34,7 @@ class AdManager {
 
   void _startAdTimer() {
     _adTimer?.cancel();
-    _adTimer = Timer.periodic(const Duration(seconds: 50), (timer) {
+    _adTimer = Timer.periodic(const Duration(seconds: 2000), (timer) {
       if (!_isAdShown && _currentAd != null) {
         _showAd();
       } else if (!_isAdShown) {
