@@ -32,7 +32,7 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   MobileAds.instance.initialize();
-  AdManager().initialize();
+  // AdManager().initialize();
   if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
     await Hive.initFlutter('BlackHole/Database');
   } else if (Platform.isIOS) {

@@ -4,6 +4,7 @@ import 'dart:async';
 
 import 'package:blackhole/CustomWidgets/gradient_containers.dart';
 import 'package:blackhole/CustomWidgets/miniplayer.dart';
+import 'package:blackhole/G-Ads.dart/ad_manager.dart';
 import 'package:blackhole/G-Ads.dart/intersatail_ads.dart';
 // import 'package:blackhole/G-Ads.dart/intersatail_ads.dart';
 import 'package:blackhole/Screens/Home/home_screen.dart';
@@ -72,6 +73,7 @@ class _HomePageState extends State<HomePage> {
 
   @override
   void initState() {
+    AdManager().initialize();
     // AdManager.showInterstitialAd();
     _startAdTimer();
     super.initState();
