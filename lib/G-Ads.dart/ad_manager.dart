@@ -11,6 +11,7 @@ class AdManager {
   static int _currentAdIndex = 0;
   static Timer? _adTimer;
   static bool _isAdShown = false;
+  static DateTime? _lastAdShownTime;
 
   // Add your 10 ad unit IDs here
   static final List<String> _adUnitIds = [
@@ -34,13 +35,24 @@ class AdManager {
 
   void _startAdTimer() {
     _adTimer?.cancel();
-    _adTimer = Timer.periodic(const Duration(seconds: 2000), (timer) {
-      if (!_isAdShown && _currentAd != null) {
-        _showAd();
-      } else if (!_isAdShown) {
-        _loadNextAd();
-      }
+    _adTimer = Timer.periodic(const Duration(seconds: 10), (timer) {
+      _checkAndLoadAd();
     });
+  }
+
+  void _checkAndLoadAd() {
+    if (_lastAdShownTime != null) {
+      final timeSinceLastAd = DateTime.now().difference(_lastAdShownTime!);
+      if (timeSinceLastAd.inSeconds < 60) {
+        return; // Don't load new ad if less than 100 seconds have passed
+      }
+    }
+
+    if (!_isAdShown && _currentAd != null) {
+      _showAd();
+    } else if (!_isAdShown && !_isAdLoading) {
+      _loadNextAd();
+    }
   }
 
   void _loadNextAd() {
@@ -55,7 +67,6 @@ class AdManager {
           _currentAd = ad;
           _isAdLoading = false;
           _setupAdCallbacks();
-          // Show ad immediately after loading
           _showAd();
         },
         onAdFailedToLoad: (LoadAdError error) {
@@ -73,7 +84,7 @@ class AdManager {
         ad.dispose();
         _currentAd = null;
         _isAdShown = false;
-        _tryNextAd();
+        _lastAdShownTime = DateTime.now();
       },
       onAdFailedToShowFullScreenContent: (InterstitialAd ad, AdError error) {
         print('Ad failed to show: ${error.message}');
@@ -84,6 +95,7 @@ class AdManager {
       },
       onAdShowedFullScreenContent: (InterstitialAd ad) {
         _isAdShown = true;
+        _lastAdShownTime = DateTime.now();
       },
     );
   }
