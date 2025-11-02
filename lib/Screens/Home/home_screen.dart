@@ -8,7 +8,10 @@ import 'package:blackhole/Screens/LocalMusic/homeScreen_song.dart';
 import 'package:blackhole/Screens/Search/search.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+// import 'package:blackhole/localization/app_localizations.dart';
+
+import 'package:blackhole/localization/app_localizations.dart';
+
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:upgrader/upgrader.dart';
 

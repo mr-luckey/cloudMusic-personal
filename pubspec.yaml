@@ -4,7 +4,7 @@ description: An Open Source Music Player App.
 # Prevent accidental publishing to pub.dev.
 publish_to: "none"
 
-version: 17.0.0
+version: 18.0.0
 
 environment:
   sdk: ">=3.1.0 <4.0.0"
@@ -55,7 +55,7 @@ dependencies:
   marquee: ^2.3.0
   material_design_icons_flutter: ^7.0.7296
 
-  metadata_god: ^0.5.2+1
+  metadata_god: ^1.1.0
   native_ads_flutter: ^1.0.7
   on_audio_query: ^2.9.0
   package_info_plus: ^8.2.1
@@ -75,11 +75,9 @@ dependencies:
   uuid: ^4.5.1
   # workmanager: ^0.5.1
   youtube_explode_dart: ^2.3.10
-  audiotagger:
-    git:
-      url: https://github.com/Samurai016/Audiotagger.git
+  # audiotagger removed due to Flutter v1 embedding API removal; using metadata_god
   gif: ^2.3.0
-  facebook_audience_network: ^1.0.1
+#  facebook_audience_network: ^1.0.1
     #  ref: 90f2db5 
     #  url: https://github.com/Samurai016/Audiotagger.git
     #  ref: 90f2db5

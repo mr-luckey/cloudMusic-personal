@@ -10,14 +10,17 @@ import 'package:blackhole/CustomWidgets/image_card.dart';
 import 'package:blackhole/CustomWidgets/like_button.dart';
 import 'package:blackhole/CustomWidgets/playlist_head.dart';
 import 'package:blackhole/CustomWidgets/song_tile_trailing_menu.dart';
-import 'package:blackhole/G-Ads.dart/banner-ads.dart';
+// import 'package:blackhole/G-Ads.dart/banner-ads.dart';
 import 'package:blackhole/Helpers/songs_count.dart' as songs_count;
 import 'package:blackhole/Screens/Library/show_songs.dart';
 import 'package:blackhole/Services/player_service.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+// import 'package:blackhole/localization/app_localizations.dart';
+
+import 'package:blackhole/localization/app_localizations.dart';
+
 import 'package:hive/hive.dart';
 // import 'package:path_provider/path_provider.dart';
 
