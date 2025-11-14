@@ -34,10 +34,10 @@ class _SongsWidgetState extends State<SongsWidget> {
         await file.delete();
         setState(() {});
       } else {
-        print("File not found");
+        print('File not found');
       }
     } catch (e) {
-      print("Error deleting file: $e");
+      print('Error deleting file: $e');
     }
   }
 
@@ -45,7 +45,7 @@ class _SongsWidgetState extends State<SongsWidget> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("MUSIC"),
+        title: const Text('MUSIC'),
         elevation: 2,
       ),
       body: Center(
@@ -65,45 +65,43 @@ class _SongsWidgetState extends State<SongsWidget> {
                   if (item.data == null) {
                     return const CircularProgressIndicator();
                   }
-                  if (item.data!.isEmpty) return const Text("Nothing found!");
-                  return item.data!.isNotEmpty?  ListView.builder(
-                    itemCount: item.data!.length,
-                    itemBuilder: (context, index) {
-                      final song = item.data![index];
-                      print(
-                          'Song title: ${song.title}, Artist: ${song.artist}');
-                      return ListTile(
-                        title: Text(
-                          song.title!,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        subtitle: Text(song.artist ?? "No Artist"),
-                        leading: QueryArtworkWidget(
-                          controller: _audioQuery,
-                          id: song.id,
-                          type: ArtworkType.AUDIO,
-                          nullArtworkWidget: CircleAvatar(
-                            child: Icon(Icons.person),
-                          ),
-                        ),
-                        onTap: () {
-                          PlayerInvoke.init(
-                            songsList: item.data!,
-
-                            index: index,
-                            isOffline: true,
-                            fromDownloads: false,
-                            recommend: false,
-                          );
-                        },
-                      );
-                    },
-                  ): const Center(child: Text("No songs found"));
-
-
-
-                      },
+                  if (item.data!.isEmpty) return const Text('Nothing found!');
+                  return item.data!.isNotEmpty
+                      ? ListView.builder(
+                          itemCount: item.data!.length,
+                          itemBuilder: (context, index) {
+                            final song = item.data![index];
+                            print(
+                                'Song title: ${song.title}, Artist: ${song.artist}');
+                            return ListTile(
+                              title: Text(
+                                song.title!,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              subtitle: Text(song.artist ?? 'No Artist'),
+                              leading: QueryArtworkWidget(
+                                controller: _audioQuery,
+                                id: song.id,
+                                type: ArtworkType.AUDIO,
+                                nullArtworkWidget: CircleAvatar(
+                                  child: Icon(Icons.person),
+                                ),
+                              ),
+                              onTap: () {
+                                PlayerInvoke.init(
+                                  songsList: item.data!,
+                                  index: index,
+                                  isOffline: true,
+                                  fromDownloads: false,
+                                  recommend: false,
+                                );
+                              },
+                            );
+                          },
+                        )
+                      : const Center(child: Text('No songs found'));
+                },
               ),
       ),
     );
@@ -123,7 +121,7 @@ class _SongsWidgetState extends State<SongsWidget> {
           const SizedBox(height: 10),
           ElevatedButton(
             onPressed: () => checkAndRequestPermissions(retry: true),
-            child: const Text("Allow"),
+            child: const Text('Allow'),
           ),
         ],
       ),

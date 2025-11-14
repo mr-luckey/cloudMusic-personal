@@ -34,10 +34,10 @@ class _HomescreenSongState extends State<HomescreenSong> {
         await file.delete();
         setState(() {});
       } else {
-        print("File not found");
+        print('File not found');
       }
     } catch (e) {
-      print("Error deleting file: $e");
+      print('Error deleting file: $e');
     }
   }
 
@@ -81,7 +81,7 @@ class _HomescreenSongState extends State<HomescreenSong> {
                   if (item.data == null) {
                     return const CircularProgressIndicator();
                   }
-                  if (item.data!.isEmpty) return const Text("Nothing found!");
+                  if (item.data!.isEmpty) return const Text('Nothing found!');
 
                   final groupedSongs = groupSongsByFirstLetter(item.data!);
 
@@ -178,7 +178,7 @@ class _HomescreenSongState extends State<HomescreenSong> {
                                               ),
                                             ),
                                             Text(
-                                              song.artist ?? "No Artist",
+                                              song.artist ?? 'No Artist',
                                               maxLines: 1,
                                               overflow: TextOverflow.ellipsis,
                                               style: TextStyle(
@@ -219,7 +219,7 @@ class _HomescreenSongState extends State<HomescreenSong> {
           const SizedBox(height: 10),
           ElevatedButton(
             onPressed: () => checkAndRequestPermissions(retry: true),
-            child: const Text("Allow"),
+            child: const Text('Allow'),
           ),
         ],
       ),

@@ -21,7 +21,9 @@ if (localPropertiesFile.exists()) {
 def keystoreProperties = new Properties()
 def keystorePropertiesFile = rootProject.file('key.properties')
 if (keystorePropertiesFile.exists()) {
-    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+    keystorePropertiesFile.withReader('UTF-8') { reader ->
+        keystoreProperties.load(reader)
+    }
 }
 
 // Flutter plugin may also be loaded via settings.gradle includeBuild
@@ -56,7 +58,7 @@ android {
 
     defaultConfig {
         applicationId "com.appware.cloudSpot"
-        minSdkVersion 21
+        minSdkVersion flutter.minSdkVersion
         targetSdkVersion 35
         multiDexEnabled true
         // viewBinding true
@@ -111,7 +113,7 @@ flutter {
 
 dependencies {
     implementation 'com.google.android.gms:play-services-measurement-api:21.0.0'
-    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.9.25"
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:2.1.0"
     implementation 'com.google.android.gms:play-services-ads:23.2.0'
     implementation 'com.google.android.gms:play-services-vision:10.+'
     implementation 'androidx.core:core-ktx:1.6.0'

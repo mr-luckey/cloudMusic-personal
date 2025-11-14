@@ -7,8 +7,290 @@ plugins {
 }
 
 rootProject.buildDir = '../build'
+
+// Apply resolution strategy at root level before subprojects
+allprojects {
+    repositories {
+        google()
+        mavenCentral()
+        def localProps = new Properties()
+        def lpFile = rootProject.file('local.properties')
+        if (lpFile.exists()) {
+            lpFile.withReader('UTF-8') { r -> localProps.load(r) }
+        }
+        def flutterPath = localProps.getProperty('flutter.sdk')
+        if (flutterPath != null) {
+            maven { url = uri("${flutterPath}/bin/internal/repo") }
+        }
+    }
+    
+    // Fix for corrupted POM files - apply to all configurations including classpath
+    configurations.all {
+        resolutionStrategy {
+            // Force working versions to avoid corrupted POMs
+            force 'com.googlecode.json-simple:json-simple:1.1.1'
+            force 'org.bouncycastle:bcpkix-jdk15on:1.70'
+            force 'org.bouncycastle:bcprov-jdk15on:1.70'
+            force 'it.unimi.dsi:fastutil:8.5.12'
+            
+            // Replace problematic versions with working ones
+            eachDependency { details ->
+                // json-simple:1.1 -> 1.1.1
+                if (details.requested.group == 'com.googlecode.json-simple' && 
+                    details.requested.name == 'json-simple') {
+                    if (details.requested.version == '1.1' || details.requested.version == null) {
+                        details.useVersion('1.1.1')
+                        details.because('json-simple:1.1 POM is corrupted, use 1.1.1 instead')
+                    }
+                }
+                // proguard-gradle:6.0.3 -> 6.2.2 (use a version that exists)
+                if (details.requested.group == 'net.sf.proguard' && 
+                    details.requested.name == 'proguard-gradle') {
+                    if (details.requested.version == '6.0.3' || details.requested.version == null) {
+                        details.useVersion('6.2.2')
+                        details.because('proguard-gradle:6.0.3 POM is corrupted, use 6.2.2 instead')
+                    }
+                }
+                // bcpkix-jdk15on:1.56 -> 1.70
+                if (details.requested.group == 'org.bouncycastle' && 
+                    details.requested.name == 'bcpkix-jdk15on') {
+                    if (details.requested.version == '1.56' || details.requested.version == null) {
+                        details.useVersion('1.70')
+                        details.because('bcpkix-jdk15on:1.56 POM is corrupted, use 1.70 instead')
+                    }
+                }
+                // bcprov-jdk15on:1.56 -> 1.70
+                if (details.requested.group == 'org.bouncycastle' && 
+                    details.requested.name == 'bcprov-jdk15on') {
+                    if (details.requested.version == '1.56' || details.requested.version == null) {
+                        details.useVersion('1.70')
+                        details.because('bcprov-jdk15on:1.56 POM is corrupted, use 1.70 instead')
+                    }
+                }
+                // fastutil:7.2.0 -> 8.5.12
+                if (details.requested.group == 'it.unimi.dsi' && 
+                    details.requested.name == 'fastutil') {
+                    if (details.requested.version == '7.2.0' || details.requested.version == null) {
+                        details.useVersion('8.5.12')
+                        details.because('fastutil:7.2.0 POM is corrupted, use 8.5.12 instead')
+                    }
+                }
+            }
+        }
+    }
+    
+    // Also apply to buildscript configurations (for plugin classpath)
+    buildscript {
+        configurations.classpath {
+            resolutionStrategy {
+                // Force working versions to avoid corrupted POMs
+                force 'com.googlecode.json-simple:json-simple:1.1.1'
+                force 'net.sf.proguard:proguard-gradle:6.2.2'
+                force 'org.bouncycastle:bcpkix-jdk15on:1.70'
+                force 'org.bouncycastle:bcprov-jdk15on:1.70'
+                force 'it.unimi.dsi:fastutil:8.5.12'
+                
+                eachDependency { details ->
+                    // json-simple:1.1 -> 1.1.1
+                    if (details.requested.group == 'com.googlecode.json-simple' && 
+                        details.requested.name == 'json-simple') {
+                        if (details.requested.version == '1.1' || details.requested.version == null) {
+                            details.useVersion('1.1.1')
+                            details.because('json-simple:1.1 POM is corrupted, use 1.1.1 instead')
+                        }
+                    }
+                    // proguard-gradle:6.0.3 -> 6.2.2 (use a version that exists)
+                    if (details.requested.group == 'net.sf.proguard' && 
+                        details.requested.name == 'proguard-gradle') {
+                        if (details.requested.version == '6.0.3' || details.requested.version == null) {
+                            details.useVersion('6.2.2')
+                            details.because('proguard-gradle:6.0.3 POM is corrupted, use 6.2.2 instead')
+                        }
+                    }
+                    // bcpkix-jdk15on:1.56 -> 1.70
+                    if (details.requested.group == 'org.bouncycastle' && 
+                        details.requested.name == 'bcpkix-jdk15on') {
+                        if (details.requested.version == '1.56' || details.requested.version == null) {
+                            details.useVersion('1.70')
+                            details.because('bcpkix-jdk15on:1.56 POM is corrupted, use 1.70 instead')
+                        }
+                    }
+                    // bcprov-jdk15on:1.56 -> 1.70
+                    if (details.requested.group == 'org.bouncycastle' && 
+                        details.requested.name == 'bcprov-jdk15on') {
+                        if (details.requested.version == '1.56' || details.requested.version == null) {
+                            details.useVersion('1.70')
+                            details.because('bcprov-jdk15on:1.56 POM is corrupted, use 1.70 instead')
+                        }
+                    }
+                    // fastutil:7.2.0 -> 8.5.12
+                    if (details.requested.group == 'it.unimi.dsi' && 
+                        details.requested.name == 'fastutil') {
+                        if (details.requested.version == '7.2.0' || details.requested.version == null) {
+                            details.useVersion('8.5.12')
+                            details.because('fastutil:7.2.0 POM is corrupted, use 8.5.12 instead')
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
 subprojects {
     project.buildDir = "${rootProject.buildDir}/${project.name}"
+    
+    // Fix for plugins missing namespace (required for AGP 8.x)
+    afterEvaluate { project ->
+        if (project.hasProperty('android')) {
+            def android = project.android
+            if (android.namespace == null) {
+                // Try to get namespace from AndroidManifest.xml
+                def manifestFile = project.file('src/main/AndroidManifest.xml')
+                if (!manifestFile.exists()) {
+                    manifestFile = project.file('src/main/AndroidManifest.xml')
+                }
+                if (manifestFile.exists()) {
+                    def manifest = new XmlSlurper().parse(manifestFile)
+                    def packageName = manifest.@package?.text()
+                    if (packageName) {
+                        android.namespace = packageName
+                    } else {
+                        // Fallback: use project name or a default namespace
+                        // For on_audio_query_android, use the known package
+                        if (project.name == 'on_audio_query_android') {
+                            android.namespace = 'com.lucasjosino.on_audio_query'
+                        } else {
+                            // Try to infer from project path or use a default
+                            android.namespace = "com.example.${project.name.replace('-', '_')}"
+                        }
+                    }
+                } else {
+                    // No manifest found, use project-based namespace
+                    if (project.name == 'on_audio_query_android') {
+                        android.namespace = 'com.lucasjosino.on_audio_query'
+                    } else {
+                        android.namespace = "com.example.${project.name.replace('-', '_')}"
+                    }
+                }
+            }
+        }
+    }
+    
+    // Apply resolution strategy to buildscript classpath (for plugin dependencies)
+    buildscript {
+        configurations.classpath {
+            resolutionStrategy {
+                // Force working versions to avoid corrupted POMs
+                force 'com.googlecode.json-simple:json-simple:1.1.1'
+                force 'org.bouncycastle:bcpkix-jdk15on:1.70'
+                force 'org.bouncycastle:bcprov-jdk15on:1.70'
+                force 'it.unimi.dsi:fastutil:8.5.12'
+                // Note: proguard-gradle handled via version substitution below, not forced
+                
+                eachDependency { details ->
+                    // json-simple:1.1 -> 1.1.1
+                    if (details.requested.group == 'com.googlecode.json-simple' && 
+                        details.requested.name == 'json-simple') {
+                        if (details.requested.version == '1.1' || details.requested.version == null) {
+                            details.useVersion('1.1.1')
+                            details.because('json-simple:1.1 POM is corrupted, use 1.1.1 instead')
+                        }
+                    }
+                    // proguard-gradle:6.0.3 -> 6.2.2 (use a version that exists)
+                    if (details.requested.group == 'net.sf.proguard' && 
+                        details.requested.name == 'proguard-gradle') {
+                        if (details.requested.version == '6.0.3' || details.requested.version == null) {
+                            details.useVersion('6.2.2')
+                            details.because('proguard-gradle:6.0.3 POM is corrupted, use 6.2.2 instead')
+                        }
+                    }
+                    // bcpkix-jdk15on:1.56 -> 1.70
+                    if (details.requested.group == 'org.bouncycastle' && 
+                        details.requested.name == 'bcpkix-jdk15on') {
+                        if (details.requested.version == '1.56' || details.requested.version == null) {
+                            details.useVersion('1.70')
+                            details.because('bcpkix-jdk15on:1.56 POM is corrupted, use 1.70 instead')
+                        }
+                    }
+                    // bcprov-jdk15on:1.56 -> 1.70
+                    if (details.requested.group == 'org.bouncycastle' && 
+                        details.requested.name == 'bcprov-jdk15on') {
+                        if (details.requested.version == '1.56' || details.requested.version == null) {
+                            details.useVersion('1.70')
+                            details.because('bcprov-jdk15on:1.56 POM is corrupted, use 1.70 instead')
+                        }
+                    }
+                    // fastutil:7.2.0 -> 8.5.12
+                    if (details.requested.group == 'it.unimi.dsi' && 
+                        details.requested.name == 'fastutil') {
+                        if (details.requested.version == '7.2.0' || details.requested.version == null) {
+                            details.useVersion('8.5.12')
+                            details.because('fastutil:7.2.0 POM is corrupted, use 8.5.12 instead')
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    // Apply resolution strategy before evaluation
+    beforeEvaluate { project ->
+        project.configurations.all {
+            resolutionStrategy {
+                // Force working versions to avoid corrupted POMs
+                force 'com.googlecode.json-simple:json-simple:1.1.1'
+                force 'net.sf.proguard:proguard-gradle:6.2.2'
+                force 'org.bouncycastle:bcpkix-jdk15on:1.70'
+                force 'org.bouncycastle:bcprov-jdk15on:1.70'
+                force 'it.unimi.dsi:fastutil:8.5.12'
+                
+                eachDependency { details ->
+                    // json-simple:1.1 -> 1.1.1
+                    if (details.requested.group == 'com.googlecode.json-simple' && 
+                        details.requested.name == 'json-simple') {
+                        if (details.requested.version == '1.1' || details.requested.version == null) {
+                            details.useVersion('1.1.1')
+                            details.because('json-simple:1.1 POM is corrupted, use 1.1.1 instead')
+                        }
+                    }
+                    // proguard-gradle:6.0.3 -> 6.2.2 (use a version that exists)
+                    if (details.requested.group == 'net.sf.proguard' && 
+                        details.requested.name == 'proguard-gradle') {
+                        if (details.requested.version == '6.0.3' || details.requested.version == null) {
+                            details.useVersion('6.2.2')
+                            details.because('proguard-gradle:6.0.3 POM is corrupted, use 6.2.2 instead')
+                        }
+                    }
+                    // bcpkix-jdk15on:1.56 -> 1.70
+                    if (details.requested.group == 'org.bouncycastle' && 
+                        details.requested.name == 'bcpkix-jdk15on') {
+                        if (details.requested.version == '1.56' || details.requested.version == null) {
+                            details.useVersion('1.70')
+                            details.because('bcpkix-jdk15on:1.56 POM is corrupted, use 1.70 instead')
+                        }
+                    }
+                    // bcprov-jdk15on:1.56 -> 1.70
+                    if (details.requested.group == 'org.bouncycastle' && 
+                        details.requested.name == 'bcprov-jdk15on') {
+                        if (details.requested.version == '1.56' || details.requested.version == null) {
+                            details.useVersion('1.70')
+                            details.because('bcprov-jdk15on:1.56 POM is corrupted, use 1.70 instead')
+                        }
+                    }
+                    // fastutil:7.2.0 -> 8.5.12
+                    if (details.requested.group == 'it.unimi.dsi' && 
+                        details.requested.name == 'fastutil') {
+                        if (details.requested.version == '7.2.0' || details.requested.version == null) {
+                            details.useVersion('8.5.12')
+                            details.because('fastutil:7.2.0 POM is corrupted, use 8.5.12 instead')
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
     project.evaluationDependsOn(':app')
 }
 
