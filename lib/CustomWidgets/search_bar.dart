@@ -161,8 +161,12 @@ class _SearchBarState extends State<SearchBar> {
                     keyboardType: TextInputType.text,
                     textInputAction: TextInputAction.search,
                     onChanged: (val) {
+                      print('[SEARCH_BAR] 🔤 User typed: "$val"');
+                      print(
+                          '[SEARCH_BAR] 📝 Controller text: "${widget.controller.text}"');
                       tempQuery = val;
                       if (val.trim() == '') {
+                        print('[SEARCH_BAR] ❌ Query cleared (empty input)');
                         hide.value = true;
                         suggestionsList.value = [];
                         isLoading.value = false;
@@ -202,10 +206,19 @@ class _SearchBarState extends State<SearchBar> {
                       }
                     },
                     onSubmitted: (submittedQuery) {
+                      print('[SEARCH_BAR] ✅ SUBMIT pressed!');
+                      print(
+                          '[SEARCH_BAR] 📤 Submitted query: "$submittedQuery"');
+                      print(
+                          '[SEARCH_BAR] 📝 Controller text at submit: "${widget.controller.text}"');
                       if (!hide.value) hide.value = true;
                       if (submittedQuery.trim() != '') {
                         query = submittedQuery.trim();
+                        print(
+                            '[SEARCH_BAR] 🚀 Calling onSubmitted with: "$submittedQuery"');
                         widget.onSubmitted(submittedQuery);
+                      } else {
+                        print('[SEARCH_BAR] ⚠️ Empty query, not submitting');
                       }
                     },
                   ),
@@ -265,7 +278,13 @@ class _SearchBarState extends State<SearchBar> {
                                       onTap: () {
                                         final selectedQuery =
                                             suggestedList[index].toString();
+                                        print(
+                                            '[SEARCH_BAR] 👆 Suggestion tapped: "$selectedQuery"');
+                                        print(
+                                            '[SEARCH_BAR] 📝 Setting controller.text to: "$selectedQuery"');
                                         widget.controller.text = selectedQuery;
+                                        print(
+                                            '[SEARCH_BAR] 🚀 Calling onSubmitted with: "$selectedQuery"');
                                         widget.onSubmitted(selectedQuery);
                                         hide.value = true;
                                         FocusManager.instance.primaryFocus

@@ -122,7 +122,8 @@ class YouTube extends StatelessWidget {
                                   Navigator.push(
                                     context,
                                     PageRouteBuilder(
-                                      opaque: false,
+                                      opaque:
+                                          true, // Make opaque to prevent seeing double search bars
                                       pageBuilder: (_, __, ___) => SearchPage(
                                         query: controller.headList[index]
                                                 ['title']
@@ -227,7 +228,8 @@ class YouTube extends StatelessWidget {
                                             Navigator.push(
                                               context,
                                               PageRouteBuilder(
-                                                opaque: false,
+                                                opaque:
+                                                    true, // Make opaque to prevent seeing double search bars
                                                 pageBuilder: (_, __, ___) =>
                                                     SearchPage(
                                                   query:

@@ -614,31 +614,33 @@ class YouTubeServices {
 
   Future<List<Map>> fetchSearchResults(String query) async {
     try {
-      final List<Video> searchResults = await yt.search.search(query);
+      final searchResults = await yt.search.search(query);
       final List<Map> videoResult = [];
-      for (final Video vid in searchResults) {
-        try {
-          // Don't fetch URLs in search to reduce loading time - will fetch when clicked
-          final res =
-              await formatVideo(video: vid, quality: 'Low', getUrl: false);
-          if (res != null && res.isNotEmpty) {
-            videoResult.add(res);
+      for (final item in searchResults) {
+        if (item is Video) {
+          try {
+            // Don't fetch URLs in search to reduce loading time - will fetch when clicked
+            final res =
+                await formatVideo(video: item, quality: 'Low', getUrl: false);
+            if (res != null && res.isNotEmpty) {
+              videoResult.add(res);
+            }
+          } catch (e, stackTrace) {
+            // Check if it's a null check error (likely from formatVideo)
+            final String errorStr = e.toString();
+            if (errorStr.contains('Null check operator used on a null value')) {
+              Logger.root.warning(
+                'Null check error formatting video ${item.id.value} in search (possible API change): $e',
+              );
+            } else {
+              Logger.root.warning(
+                'Error formatting video ${item.id.value} in search: $e',
+                e,
+                stackTrace,
+              );
+            }
+            // Continue with other videos
           }
-        } catch (e, stackTrace) {
-          // Check if it's a null check error (likely from formatVideo)
-          final String errorStr = e.toString();
-          if (errorStr.contains('Null check operator used on a null value')) {
-            Logger.root.warning(
-              'Null check error formatting video ${vid.id.value} in search (possible API change): $e',
-            );
-          } else {
-            Logger.root.warning(
-              'Error formatting video ${vid.id.value} in search: $e',
-              e,
-              stackTrace,
-            );
-          }
-          // Continue with other videos
         }
       }
       return [
@@ -652,10 +654,58 @@ class YouTubeServices {
       final String errorStr = e.toString();
       if (errorStr.contains('Null check operator used on a null value')) {
         Logger.root.severe(
-          'Null check error in fetchSearchResults (possible API change): $e',
-          e,
-          stackTrace,
+          'Null check error in YT search (API change detected). Falling back to YTM search: $e',
         );
+        // FALLBACK: Use YouTube Music search if standard YouTube search fails
+        // This ensures the user still gets results (Songs/Videos)
+        try {
+          final fallbackResults = await YtMusicService().search(query);
+          final List<Map> allVideos = [];
+
+          Logger.root.info(
+              'Fallback: YTM returned ${fallbackResults.length} sections');
+
+          for (final section in fallbackResults) {
+            final String title =
+                section['title']?.toString().toLowerCase() ?? '';
+
+            Logger.root.info('Fallback processing section: "$title"');
+
+            // Strict filter: Only Songs and Videos (Exclude Albums, Playlists, Artists)
+            if (title.contains('song') || title.contains('video')) {
+              final items = section['items'];
+              if (items is List) {
+                Logger.root
+                    .info('Fallback: Found ${items.length} items in "$title"');
+                for (final item in items) {
+                  if (item is Map) {
+                    allVideos.add(item);
+                  }
+                }
+              }
+            } else {
+              Logger.root.info(
+                  'Fallback: Skipping section "$title" (Strict Video Filter)');
+            }
+          }
+
+          if (allVideos.isNotEmpty) {
+            Logger.root.info(
+                'Fallback search successful: Found ${allVideos.length} filtered videos');
+            return [
+              {
+                'title': 'Videos',
+                'items': allVideos,
+                'allowViewAll': false,
+              }
+            ];
+          } else {
+            Logger.root.warning(
+                'Fallback search returned results but strict filter yielded 0 videos.');
+          }
+        } catch (fallbackError) {
+          Logger.root.severe('Fallback search also failed: $fallbackError');
+        }
       } else {
         Logger.root.severe(
           'Error in fetchSearchResults: $e',
