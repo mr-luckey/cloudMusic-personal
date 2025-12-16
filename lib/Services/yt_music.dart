@@ -72,9 +72,6 @@ class YtMusicService {
     Map<String, String>? headers,
   ) async {
     final Uri uri = Uri.https(url);
-    print(uri);
-    print(headers);
-    print('checking api............................');
     final Response response = await get(uri, headers: headers);
     return response;
   }
@@ -111,14 +108,7 @@ class YtMusicService {
     Map<String, String>? headers,
   ) async {
     final Uri uri = Uri.https(ytmDomain, baseApiEndpoint + endpoint, ytmParams);
-    print(uri);
-    print('uri is checking final...............///////////////');
-    print(headers);
-    print('checking headers............................');
-    print(jsonEncode(body));
-    print('checking body............................');
     final response = await post(uri, headers: headers, body: jsonEncode(body));
-    print(response.statusCode);
     if (response.statusCode == 200) {
       return json.decode(response.body) as Map;
     } else {
@@ -537,13 +527,36 @@ class YtMusicService {
       String finalUrl = '';
       String expireAt = '0';
       if (getUrl) {
-        urlsData = await YouTubeServices.instance.getYtStreamUrls(videoId);
-        if (urlsData.isNotEmpty) {
-          final Map finalUrlData =
-              quality == 'High' ? urlsData.last : urlsData.first;
-          finalUrl = finalUrlData['url'].toString();
-          expireAt = finalUrlData['expireAt'].toString();
-          urls = urlsData.map((e) => e['url'].toString()).toList();
+        try {
+          urlsData = await YouTubeServices.instance.getYtStreamUrls(videoId);
+
+          if (urlsData.isEmpty) {
+            Logger.root
+                .severe('No stream URLs available for YT Music video $videoId');
+            return {}; // Return empty map if no URLs are available
+          }
+
+          if (urlsData.isNotEmpty) {
+            final Map finalUrlData =
+                quality == 'High' ? urlsData.last : urlsData.first;
+            if (finalUrlData['url'] != null &&
+                finalUrlData['url'].toString().isNotEmpty) {
+              finalUrl = finalUrlData['url'].toString();
+              expireAt = finalUrlData['expireAt']?.toString() ??
+                  (DateTime.now().millisecondsSinceEpoch ~/ 1000 + 3600 * 5)
+                      .toString();
+              urls = urlsData
+                  .map((e) => e['url'].toString())
+                  .where((url) => url.isNotEmpty)
+                  .toList();
+            } else {
+              return {};
+            }
+          }
+        } catch (e) {
+          Logger.root.severe(
+              'Error getting stream URLs for YT Music video $videoId', e);
+          return {};
         }
       }
 
@@ -594,9 +607,6 @@ class YtMusicService {
       body['browseId'] = browseId;
       final Map response =
           await sendRequest(endpoints['browse']!, body, headers);
-      print(endpoints['browse']);
-      print(playlistId);
-      print('here is the checking for playlist ID............................');
       // print(response);
 
       heading = NavClass.nav(response, [
@@ -607,20 +617,7 @@ class YtMusicService {
         0,
         'text',
       ]) as String?;
-      print(';;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;');
-      print(NavClass.nav(response, [
-        'header',
-        'musicDetailHeaderRenderer',
-        'title',
-        'runs',
-        0,
-        'text',
-      ]));
-      print(';;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;');
 
-      print(response);
-      print(heading);
-      print('checking heading ..............');
       String? subtitle = (NavClass.nav(response, [
                 'header',
                 'musicDetailHeaderRenderer',

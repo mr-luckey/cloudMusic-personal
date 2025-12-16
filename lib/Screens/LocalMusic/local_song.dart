@@ -1,30 +1,23 @@
 import 'dart:io';
 import 'package:blackhole/Services/player_service.dart';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:on_audio_query/on_audio_query.dart';
 
-class SongsWidget extends StatefulWidget {
-  const SongsWidget({Key? key}) : super(key: key);
+class SongsController extends GetxController {
+  final OnAudioQuery audioQuery = OnAudioQuery();
+  final hasPermission = false.obs;
 
   @override
-  _SongsWidgetState createState() => _SongsWidgetState();
-}
-
-class _SongsWidgetState extends State<SongsWidget> {
-  final OnAudioQuery _audioQuery = OnAudioQuery();
-  bool _hasPermission = false;
-
-  @override
-  void initState() {
-    super.initState();
+  void onInit() {
+    super.onInit();
     LogConfig logConfig = LogConfig(logType: LogType.DEBUG);
-    _audioQuery.setLogConfig(logConfig);
+    audioQuery.setLogConfig(logConfig);
     checkAndRequestPermissions();
   }
 
-  checkAndRequestPermissions({bool retry = false}) async {
-    _hasPermission = await _audioQuery.checkAndRequest(retryRequest: retry);
-    if (_hasPermission) setState(() {});
+  Future<void> checkAndRequestPermissions({bool retry = false}) async {
+    hasPermission.value = await audioQuery.checkAndRequest(retryRequest: retry);
   }
 
   Future<void> deleteSong(String filePath) async {
@@ -32,82 +25,86 @@ class _SongsWidgetState extends State<SongsWidget> {
       final file = File(filePath);
       if (await file.exists()) {
         await file.delete();
-        setState(() {});
-      } else {
-        print('File not found');
+        hasPermission.value = hasPermission.value; // Trigger rebuild
       }
     } catch (e) {
-      print('Error deleting file: $e');
+      // Handle error
     }
   }
+}
+
+class SongsWidget extends StatelessWidget {
+  const SongsWidget({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
+    final controller = Get.put(SongsController());
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('MUSIC'),
         elevation: 2,
       ),
       body: Center(
-        child: !_hasPermission
-            ? noAccessToLibraryWidget()
-            : FutureBuilder<List<SongModel>>(
-                future: _audioQuery.querySongs(
-                  sortType: SongSortType.TITLE,
-                  orderType: OrderType.ASC_OR_SMALLER,
-                  uriType: UriType.EXTERNAL,
-                  ignoreCase: true,
-                ),
-                builder: (context, item) {
-                  if (item.hasError) {
-                    return Text(item.error.toString());
-                  }
-                  if (item.data == null) {
-                    return const CircularProgressIndicator();
-                  }
-                  if (item.data!.isEmpty) return const Text('Nothing found!');
-                  return item.data!.isNotEmpty
-                      ? ListView.builder(
-                          itemCount: item.data!.length,
-                          itemBuilder: (context, index) {
-                            final song = item.data![index];
-                            print(
-                                'Song title: ${song.title}, Artist: ${song.artist}');
-                            return ListTile(
-                              title: Text(
-                                song.title!,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              subtitle: Text(song.artist ?? 'No Artist'),
-                              leading: QueryArtworkWidget(
-                                controller: _audioQuery,
-                                id: song.id,
-                                type: ArtworkType.AUDIO,
-                                nullArtworkWidget: CircleAvatar(
-                                  child: Icon(Icons.person),
+        child: Obx(
+          () => !controller.hasPermission.value
+              ? noAccessToLibraryWidget(controller)
+              : FutureBuilder<List<SongModel>>(
+                  future: controller.audioQuery.querySongs(
+                    sortType: SongSortType.TITLE,
+                    orderType: OrderType.ASC_OR_SMALLER,
+                    uriType: UriType.EXTERNAL,
+                    ignoreCase: true,
+                  ),
+                  builder: (context, item) {
+                    if (item.hasError) {
+                      return Text(item.error.toString());
+                    }
+                    if (item.data == null) {
+                      return const CircularProgressIndicator();
+                    }
+                    if (item.data!.isEmpty) return const Text('Nothing found!');
+                    return item.data!.isNotEmpty
+                        ? ListView.builder(
+                            itemCount: item.data!.length,
+                            itemBuilder: (context, index) {
+                              final song = item.data![index];
+                              return ListTile(
+                                title: Text(
+                                  song.title!,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                 ),
-                              ),
-                              onTap: () {
-                                PlayerInvoke.init(
-                                  songsList: item.data!,
-                                  index: index,
-                                  isOffline: true,
-                                  fromDownloads: false,
-                                  recommend: false,
-                                );
-                              },
-                            );
-                          },
-                        )
-                      : const Center(child: Text('No songs found'));
-                },
-              ),
+                                subtitle: Text(song.artist ?? 'No Artist'),
+                                leading: QueryArtworkWidget(
+                                  controller: controller.audioQuery,
+                                  id: song.id,
+                                  type: ArtworkType.AUDIO,
+                                  nullArtworkWidget: CircleAvatar(
+                                    child: Icon(Icons.person),
+                                  ),
+                                ),
+                                onTap: () {
+                                  PlayerInvoke.init(
+                                    songsList: item.data!,
+                                    index: index,
+                                    isOffline: true,
+                                    fromDownloads: false,
+                                    recommend: false,
+                                  );
+                                },
+                              );
+                            },
+                          )
+                        : const Center(child: Text('No songs found'));
+                  },
+                ),
+        ),
       ),
     );
   }
 
-  Widget noAccessToLibraryWidget() {
+  Widget noAccessToLibraryWidget(SongsController controller) {
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(10),
@@ -120,7 +117,7 @@ class _SongsWidgetState extends State<SongsWidget> {
           const Text("Application doesn't have access to the library"),
           const SizedBox(height: 10),
           ElevatedButton(
-            onPressed: () => checkAndRequestPermissions(retry: true),
+            onPressed: () => controller.checkAndRequestPermissions(retry: true),
             child: const Text('Allow'),
           ),
         ],

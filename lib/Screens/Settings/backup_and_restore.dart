@@ -12,26 +12,55 @@ import 'package:blackhole/localization/app_localizations.dart';
 
 // import 'package:blackhole/localization/app_localizations.dart';
 
+import 'package:get/get.dart';
 import 'package:get_it/get_it.dart';
 import 'package:hive/hive.dart';
 
-class BackupAndRestorePage extends StatefulWidget {
+class BackupAndRestorePageController extends GetxController {
+  final Box settingsBox = Hive.box('settings');
+  final MyTheme currentTheme = GetIt.I<MyTheme>();
+  final autoBackPath = ''.obs;
+
+  @override
+  void onInit() {
+    super.onInit();
+    autoBackPath.value = Hive.box('settings').get(
+      'autoBackPath',
+      defaultValue: '/storage/emulated/0/CloudSpot/Backups',
+    ) as String;
+  }
+
+  Future<void> resetAutoBackPath() async {
+    autoBackPath.value = await ExtStorageProvider.getExtStorage(
+          dirName: 'CloudSpot/Backups',
+          writeAccess: true,
+        ) ??
+        '/storage/emulated/0/CloudSpot/Backups';
+    Hive.box('settings').put('autoBackPath', autoBackPath.value);
+  }
+
+  Future<void> selectAutoBackPath(BuildContext context) async {
+    final String temp = await Picker.selectFolder(
+      context: context,
+      message: AppLocalizations.of(
+        context,
+      )!
+          .selectBackLocation,
+    );
+    if (temp.trim() != '') {
+      autoBackPath.value = temp;
+      Hive.box('settings').put('autoBackPath', temp);
+    }
+  }
+}
+
+class BackupAndRestorePage extends StatelessWidget {
   const BackupAndRestorePage({super.key});
 
   @override
-  State<BackupAndRestorePage> createState() => _BackupAndRestorePageState();
-}
-
-class _BackupAndRestorePageState extends State<BackupAndRestorePage> {
-  final Box settingsBox = Hive.box('settings');
-  final MyTheme currentTheme = GetIt.I<MyTheme>();
-  String autoBackPath = Hive.box('settings').get(
-    'autoBackPath',
-    defaultValue: '/storage/emulated/0/CloudSpot/Backups',
-  ) as String;
-
-  @override
   Widget build(BuildContext context) {
+    final controller = Get.put(BackupAndRestorePageController());
+
     return GradientContainer(
       child: Scaffold(
         backgroundColor: Colors.transparent,
@@ -83,7 +112,7 @@ class _BackupAndRestorePageState extends State<BackupAndRestorePage> {
                     ) as List;
                     if (!playlistNames.contains('Favorite Songs')) {
                       playlistNames.insert(0, 'Favorite Songs');
-                      settingsBox.put(
+                      controller.settingsBox.put(
                         'playlistNames',
                         playlistNames,
                       );
@@ -280,7 +309,7 @@ class _BackupAndRestorePageState extends State<BackupAndRestorePage> {
               dense: true,
               onTap: () async {
                 await restore(context);
-                currentTheme.refresh();
+                controller.currentTheme.refresh();
               },
             ),
             BoxSwitchTile(
@@ -299,64 +328,46 @@ class _BackupAndRestorePageState extends State<BackupAndRestorePage> {
               keyName: 'autoBackup',
               defaultValue: false,
             ),
-            ListTile(
-              title: Text(
-                AppLocalizations.of(
-                  context,
-                )!
-                    .autoBackLocation,
-              ),
-              subtitle: Text(autoBackPath),
-              trailing: TextButton(
-                style: TextButton.styleFrom(
-                  foregroundColor:
-                      Theme.of(context).brightness == Brightness.dark
-                          ? Colors.white
-                          : Colors.grey[700],
-                ),
-                onPressed: () async {
-                  autoBackPath = await ExtStorageProvider.getExtStorage(
-                        dirName: 'CloudSpot/Backups',
-                        writeAccess: true,
-                      ) ??
-                      '/storage/emulated/0/CloudSpot/Backups';
-                  Hive.box('settings').put('autoBackPath', autoBackPath);
-                  setState(
-                    () {},
-                  );
-                },
-                child: Text(
+            Obx(
+              () => ListTile(
+                title: Text(
                   AppLocalizations.of(
                     context,
                   )!
-                      .reset,
+                      .autoBackLocation,
                 ),
-              ),
-              onTap: () async {
-                final String temp = await Picker.selectFolder(
-                  context: context,
-                  message: AppLocalizations.of(
-                    context,
-                  )!
-                      .selectBackLocation,
-                );
-                if (temp.trim() != '') {
-                  autoBackPath = temp;
-                  Hive.box('settings').put('autoBackPath', temp);
-                  setState(
-                    () {},
-                  );
-                } else {
-                  ShowSnackBar().showSnackBar(
-                    context,
+                subtitle: Text(controller.autoBackPath.value),
+                trailing: TextButton(
+                  style: TextButton.styleFrom(
+                    foregroundColor:
+                        Theme.of(context).brightness == Brightness.dark
+                            ? Colors.white
+                            : Colors.grey[700],
+                  ),
+                  onPressed: () async {
+                    await controller.resetAutoBackPath();
+                  },
+                  child: Text(
                     AppLocalizations.of(
                       context,
                     )!
-                        .noFolderSelected,
-                  );
-                }
-              },
-              dense: true,
+                        .reset,
+                  ),
+                ),
+                onTap: () async {
+                  await controller.selectAutoBackPath(context);
+                  if (controller.autoBackPath.value.trim() == '') {
+                    ShowSnackBar().showSnackBar(
+                      context,
+                      AppLocalizations.of(
+                        context,
+                      )!
+                          .noFolderSelected,
+                    );
+                  }
+                },
+                dense: true,
+              ),
             ),
           ],
         ),

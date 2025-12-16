@@ -6,23 +6,35 @@ import 'package:blackhole/Screens/Player/audioplayer.dart';
 import 'package:flutter/material.dart';
 import 'package:blackhole/localization/app_localizations.dart';
 
+import 'package:get/get.dart';
 import 'package:get_it/get_it.dart';
 import 'package:hive/hive.dart';
 
-class Equalizer extends StatefulWidget {
+class EqualizerController extends GetxController {
+  final enabled = false.obs;
+  final AudioPlayerHandler audioHandler = GetIt.I<AudioPlayerHandler>();
+
+  @override
+  void onInit() {
+    super.onInit();
+    enabled.value =
+        Hive.box('settings').get('setEqualizer', defaultValue: false) as bool;
+  }
+
+  void toggleEqualizer(bool value) {
+    enabled.value = value;
+    Hive.box('settings').put('setEqualizer', value);
+    audioHandler.customAction('setEqualizer', {'value': value});
+  }
+}
+
+class Equalizer extends StatelessWidget {
   const Equalizer({super.key});
 
   @override
-  _EqualizerState createState() => _EqualizerState();
-}
-
-class _EqualizerState extends State<Equalizer> {
-  bool enabled =
-      Hive.box('settings').get('setEqualizer', defaultValue: false) as bool;
-  AudioPlayerHandler audioHandler = GetIt.I<AudioPlayerHandler>();
-
-  @override
   Widget build(BuildContext context) {
+    final controller = Get.put(EqualizerController());
+
     return AlertDialog(
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(15.0),
@@ -32,24 +44,26 @@ class _EqualizerState extends State<Equalizer> {
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            SwitchListTile(
-              title: Text(AppLocalizations.of(context)!.equalizer),
-              value: enabled,
-              activeColor: Theme.of(context).colorScheme.secondary,
-              onChanged: (value) {
-                enabled = value;
-                Hive.box('settings').put('setEqualizer', value);
-                audioHandler.customAction('setEqualizer', {'value': value});
-                setState(() {});
-              },
-            ),
-            if (enabled)
-              SizedBox(
-                height: MediaQuery.sizeOf(context).height / 2,
-                child: EqualizerControls(
-                  audioHandler: audioHandler,
-                ),
+            Obx(
+              () => SwitchListTile(
+                title: Text(AppLocalizations.of(context)!.equalizer),
+                value: controller.enabled.value,
+                activeThumbColor: Theme.of(context).colorScheme.secondary,
+                onChanged: (value) {
+                  controller.toggleEqualizer(value);
+                },
               ),
+            ),
+            Obx(
+              () => controller.enabled.value
+                  ? SizedBox(
+                      height: MediaQuery.sizeOf(context).height / 2,
+                      child: EqualizerControls(
+                        audioHandler: controller.audioHandler,
+                      ),
+                    )
+                  : const SizedBox(),
+            ),
           ],
         ),
       ),
@@ -59,7 +73,7 @@ class _EqualizerState extends State<Equalizer> {
 
 class EqualizerControls extends StatefulWidget {
   final AudioPlayerHandler audioHandler;
-  const EqualizerControls({required this.audioHandler});
+  const EqualizerControls({super.key, required this.audioHandler});
   @override
   _EqualizerControlsState createState() => _EqualizerControlsState();
 }
@@ -110,7 +124,15 @@ class _EqualizerControlsState extends State<EqualizerControls> {
   }
 }
 
-class VerticalSlider extends StatefulWidget {
+class VerticalSliderController extends GetxController {
+  final sliderValue = Rx<double?>(null);
+
+  void updateSliderValue(double value) {
+    sliderValue.value = value;
+  }
+}
+
+class VerticalSlider extends StatelessWidget {
   final double? value;
   final double? min;
   final double? max;
@@ -126,21 +148,18 @@ class VerticalSlider extends StatefulWidget {
     required this.audioHandler,
   });
 
-  @override
-  _VerticalSliderState createState() => _VerticalSliderState();
-}
-
-class _VerticalSliderState extends State<VerticalSlider> {
-  double? sliderValue;
-
   void setGain(int bandIndex, double gain) {
     Hive.box('settings').put('equalizerBand$bandIndex', gain);
-    widget.audioHandler
-        .customAction('setBandGain', {'band': bandIndex, 'gain': gain});
+    audioHandler.customAction('setBandGain', {'band': bandIndex, 'gain': gain});
   }
 
   @override
   Widget build(BuildContext context) {
+    final controller = Get.put(
+      VerticalSliderController(),
+      tag: 'slider_$bandIndex',
+    );
+
     return FittedBox(
       fit: BoxFit.fitHeight,
       alignment: Alignment.bottomCenter,
@@ -150,19 +169,19 @@ class _VerticalSliderState extends State<VerticalSlider> {
           width: 400.0,
           height: 400.0,
           alignment: Alignment.center,
-          child: Slider(
-            activeColor: Theme.of(context).colorScheme.secondary,
-            inactiveColor:
-                Theme.of(context).colorScheme.secondary.withOpacity(0.4),
-            value: sliderValue ?? widget.value!,
-            min: widget.min!,
-            max: widget.max!,
-            onChanged: (double newValue) {
-              setState(() {
-                sliderValue = newValue;
-                setGain(widget.bandIndex, newValue);
-              });
-            },
+          child: Obx(
+            () => Slider(
+              activeColor: Theme.of(context).colorScheme.secondary,
+              inactiveColor:
+                  Theme.of(context).colorScheme.secondary.withOpacity(0.4),
+              value: controller.sliderValue.value ?? value!,
+              min: min!,
+              max: max!,
+              onChanged: (double newValue) {
+                controller.updateSliderValue(newValue);
+                setGain(bandIndex, newValue);
+              },
+            ),
           ),
         ),
       ),

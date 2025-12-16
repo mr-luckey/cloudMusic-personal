@@ -4,25 +4,46 @@ import 'dart:async';
 
 import 'package:blackhole/CustomWidgets/gradient_containers.dart';
 import 'package:blackhole/CustomWidgets/miniplayer.dart';
-import 'package:blackhole/G-Ads.dart/ad_manager.dart';
+// import 'package:blackhole/G-Ads.dart/ad_manager.dart';
 // import 'package:blackhole/G-Ads.dart/intersatail_ads.dart';
 // import 'package:blackhole/G-Ads.dart/intersatail_ads.dart';
 import 'package:blackhole/Screens/Home/home_screen.dart';
 import 'package:blackhole/Screens/Library/library.dart';
-import 'package:blackhole/Screens/LocalMusic/homeScreen_song.dart';
+// import 'package:blackhole/Screens/LocalMusic/homeScreen_song.dart';
 import 'package:blackhole/Screens/Settings/new_settings_page.dart';
 import 'package:blackhole/Screens/YouTube/youtube_home.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
-import 'package:flutter/cupertino.dart';
+// import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
+// import 'package:flutter/widgets.dart';
 // import 'package:blackhole/localization/app_localizations.dart';
 
 import 'package:blackhole/localization/app_localizations.dart';
 
+import 'package:get/get.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:persistent_bottom_nav_bar/persistent_bottom_nav_bar.dart';
 // import 'package:persistent_bottom_nav_bar/persistent_tab_view.dart';
+
+class HomePageController extends GetxController {
+  final sectionsToShow = <dynamic>[].obs;
+
+  @override
+  void onInit() {
+    super.onInit();
+    sectionsToShow.value = Hive.box('settings').get(
+      'sectionsToShow',
+      defaultValue: ['Home', 'YouTube', 'Library', 'Settings'],
+    ) as List;
+  }
+
+  void updateSectionsToShow() {
+    sectionsToShow.value = Hive.box('settings').get(
+      'sectionsToShow',
+      defaultValue: ['Home', 'YouTube', 'Library', 'Settings'],
+    ) as List;
+  }
+}
 
 class HomePage extends StatefulWidget {
   @override
@@ -30,6 +51,7 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  final controller = Get.put(HomePageController());
   Timer? _timer;
   PersistentTabController _controller =
       PersistentTabController(initialIndex: 0);
@@ -42,10 +64,6 @@ class _HomePageState extends State<HomePage> {
       Hive.box('settings').get('checkUpdate', defaultValue: true) as bool;
   bool autoBackup =
       Hive.box('settings').get('autoBackup', defaultValue: false) as bool;
-  List sectionsToShow = Hive.box('settings').get(
-    'sectionsToShow',
-    defaultValue: ['Home', 'YouTube', 'Library', 'Settings'],
-  ) as List;
   DateTime? backButtonPressTime;
   final bool useDense = Hive.box('settings').get(
     'useDenseMini',
@@ -57,17 +75,12 @@ class _HomePageState extends State<HomePage> {
   bool _isConnected = false;
 
   void callback() {
-    sectionsToShow = Hive.box('settings').get(
-      'sectionsToShow',
-      defaultValue: ['Home', 'YouTube', 'Library', 'Settings'],
-    ) as List;
+    controller.updateSectionsToShow();
     onItemTapped(0);
-    setState(() {});
   }
 
   void _startAdTimer() {
     _timer = Timer.periodic(Duration(seconds: 5), (Timer timer) {
-      print('i am loaded....................$_timer');
       // AdManager.showInterstitialAd();
       // print(
       //     'i am loaded....................'); // Show the interstitial ad every 50 seconds
@@ -81,11 +94,8 @@ class _HomePageState extends State<HomePage> {
 
     // Initialize AdManager only if connected to internet
     if (_isConnected) {
-      AdManager().initialize();
-      print('Internet connected - AdManager initialized');
-    } else {
-      print('No internet connection - AdManager not initialized');
-    }
+      // AdManager().initialize();
+    } else {}
   }
 
   // Method to listen to connectivity changes
@@ -98,12 +108,10 @@ class _HomePageState extends State<HomePage> {
 
       // If connection was restored and AdManager wasn't initialized before
       if (_isConnected && !wasConnected) {
-        AdManager().initialize();
-        print('Internet connection restored - AdManager initialized');
+        // AdManager().initialize();
       }
       // If connection was lost, you might want to stop ad loading
       else if (!_isConnected && wasConnected) {
-        print('Internet connection lost - AdManager stopped');
         // Note: AdManager doesn't have a stop method, but you can handle this as needed
       }
     });

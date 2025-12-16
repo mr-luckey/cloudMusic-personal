@@ -1,47 +1,44 @@
 // Coded by Naseer Ahmed
 
-import 'dart:io';
+// import 'dart:io';
 
 import 'package:blackhole/CustomWidgets/gradient_containers.dart';
 import 'package:blackhole/CustomWidgets/snackbar.dart';
-import 'package:blackhole/Helpers/github.dart';
-import 'package:blackhole/Helpers/update.dart';
-import 'package:device_info_plus/device_info_plus.dart';
+// import 'package:blackhole/Helpers/github.dart';
+// import 'package:blackhole/Helpers/update.dart';
+// import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:blackhole/localization/app_localizations.dart';
 
 // import 'package:blackhole/localization/app_localizations.dart';
 
-import 'package:hive/hive.dart';
+// import 'package:hive/hive.dart';
+import 'package:get/get.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:share_plus/share_plus.dart';
 
-class AboutPage extends StatefulWidget {
+class AboutPageController extends GetxController {
+  final appVersion = Rx<String?>(null);
+
+  @override
+  void onInit() {
+    super.onInit();
+    loadAppVersion();
+  }
+
+  Future<void> loadAppVersion() async {
+    final PackageInfo packageInfo = await PackageInfo.fromPlatform();
+    appVersion.value = packageInfo.version;
+  }
+}
+
+class AboutPage extends StatelessWidget {
   const AboutPage({super.key});
 
   @override
-  State<AboutPage> createState() => _AboutPageState();
-}
-
-class _AboutPageState extends State<AboutPage> {
-  String? appVersion;
-
-  @override
-  void initState() {
-    main();
-    super.initState();
-  }
-
-  Future<void> main() async {
-    final PackageInfo packageInfo = await PackageInfo.fromPlatform();
-    appVersion = packageInfo.version;
-    setState(
-      () {},
-    );
-  }
-
-  @override
   Widget build(BuildContext context) {
+    final controller = Get.put(AboutPageController());
+
     return GradientContainer(
       child: Scaffold(
         backgroundColor: Colors.transparent,
@@ -78,85 +75,87 @@ class _AboutPageState extends State<AboutPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      ListTile(
-                        title: Text(
-                          AppLocalizations.of(
-                            context,
-                          )!
-                              .version,
-                        ),
-                        subtitle: Text(
-                          AppLocalizations.of(
-                            context,
-                          )!
-                              .versionSub,
-                        ),
-                        onTap: () {
-                          ShowSnackBar().showSnackBar(
-                            context,
+                      Obx(
+                        () => ListTile(
+                          title: Text(
                             AppLocalizations.of(
                               context,
                             )!
-                                .checkingUpdate,
-                            noAction: true,
-                          );
+                                .version,
+                          ),
+                          subtitle: Text(
+                            AppLocalizations.of(
+                              context,
+                            )!
+                                .versionSub,
+                          ),
+                          onTap: () {
+                            ShowSnackBar().showSnackBar(
+                              context,
+                              AppLocalizations.of(
+                                context,
+                              )!
+                                  .checkingUpdate,
+                              noAction: true,
+                            );
 
-                          // GitHub.getLatestVersion().then(
-                          //   (String latestVersion) async {
-                          //     if (compareVersion(
-                          //       latestVersion,
-                          //       appVersion!,
-                          //     )) {
-                          //       ShowSnackBar().showSnackBar(
-                          //         context,
-                          //         AppLocalizations.of(context)!.updateAvailable,
-                          //         duration: const Duration(seconds: 15),
-                          //         action: SnackBarAction(
-                          //           textColor:
-                          //               Theme.of(context).colorScheme.secondary,
-                          //           label: AppLocalizations.of(context)!.update,
-                          //           onPressed: () async {
-                          //             if (Platform.isAndroid) {
-                          //               List? abis = await Hive.box('settings')
-                          //                   .get('supportedAbis') as List?;
-                          //
-                          //               if (abis == null) {
-                          //                 final DeviceInfoPlugin deviceInfo =
-                          //                     DeviceInfoPlugin();
-                          //                 final AndroidDeviceInfo
-                          //                     androidDeviceInfo =
-                          //                     await deviceInfo.androidInfo;
-                          //                 abis =
-                          //                     androidDeviceInfo.supportedAbis;
-                          //                 await Hive.box('settings')
-                          //                     .put('supportedAbis', abis);
-                          //               }
-                          //               if (abis.contains('arm64')) {
-                          //               } else if (abis.contains('armeabi')) {}
-                          //             }
-                          //
-                          //             /// The above code is using the Dart programming language.
-                          //             Navigator.pop(context);
-                          //           },
-                          //         ),
-                          //       );
-                          //     } else {
-                          //       ShowSnackBar().showSnackBar(
-                          //         context,
-                          //         AppLocalizations.of(
-                          //           context,
-                          //         )!
-                          //             .latest,
-                          //       );
-                          //     }
-                          //   },
-                          // );
-                        },
-                        trailing: Text(
-                          'v$appVersion',
-                          style: const TextStyle(fontSize: 12),
+                            // GitHub.getLatestVersion().then(
+                            //   (String latestVersion) async {
+                            //     if (compareVersion(
+                            //       latestVersion,
+                            //       appVersion!,
+                            //     )) {
+                            //       ShowSnackBar().showSnackBar(
+                            //         context,
+                            //         AppLocalizations.of(context)!.updateAvailable,
+                            //         duration: const Duration(seconds: 15),
+                            //         action: SnackBarAction(
+                            //           textColor:
+                            //               Theme.of(context).colorScheme.secondary,
+                            //           label: AppLocalizations.of(context)!.update,
+                            //           onPressed: () async {
+                            //             if (Platform.isAndroid) {
+                            //               List? abis = await Hive.box('settings')
+                            //                   .get('supportedAbis') as List?;
+                            //
+                            //               if (abis == null) {
+                            //                 final DeviceInfoPlugin deviceInfo =
+                            //                     DeviceInfoPlugin();
+                            //                 final AndroidDeviceInfo
+                            //                     androidDeviceInfo =
+                            //                     await deviceInfo.androidInfo;
+                            //                 abis =
+                            //                     androidDeviceInfo.supportedAbis;
+                            //                 await Hive.box('settings')
+                            //                     .put('supportedAbis', abis);
+                            //               }
+                            //               if (abis.contains('arm64')) {
+                            //               } else if (abis.contains('armeabi')) {}
+                            //             }
+                            //
+                            //             /// The above code is using the Dart programming language.
+                            //             Navigator.pop(context);
+                            //           },
+                            //         ),
+                            //       );
+                            //     } else {
+                            //       ShowSnackBar().showSnackBar(
+                            //         context,
+                            //         AppLocalizations.of(
+                            //           context,
+                            //         )!
+                            //             .latest,
+                            //       );
+                            //     }
+                            //   },
+                            // );
+                          },
+                          trailing: Text(
+                            'v${controller.appVersion.value}',
+                            style: const TextStyle(fontSize: 12),
+                          ),
+                          dense: true,
                         ),
-                        dense: true,
                       ),
                       ListTile(
                         title: Text(

@@ -1,5 +1,3 @@
-
-
 import 'dart:io';
 
 import 'package:audio_service/audio_service.dart';
@@ -33,7 +31,7 @@ class PlayerInvoke {
     if (shuffle) finalList.shuffle();
     if (offline == null) {
       if (audioHandler.mediaItem.value?.extras!['url'].startsWith('http')
-      as bool) {
+          as bool) {
         offline = false;
       } else {
         offline = true;
@@ -49,8 +47,8 @@ class PlayerInvoke {
         fromDownloads
             ? setDownValues(finalList, globalIndex)
             : (Platform.isWindows || Platform.isLinux)
-            ? setOffDesktopValues(finalList, globalIndex)
-            : setOffValues(finalList, globalIndex);
+                ? setOffDesktopValues(finalList, globalIndex)
+                : setOffValues(finalList, globalIndex);
       } else {
         setValues(
           finalList,
@@ -63,21 +61,24 @@ class PlayerInvoke {
   }
 
   static Future<MediaItem> setTags(
-      SongModel response,
-      Directory tempDir,
-      ) async {
+    SongModel response,
+    Directory tempDir,
+  ) async {
     String playTitle = response.title;
     playTitle == 'Unknown'
         ? playTitle = response.displayNameWOExt
         : playTitle = response.title;
-    String playArtist = response.artist != null ? response.artist! : '<unknown>';
+    String playArtist =
+        response.artist != null ? response.artist! : '<unknown>';
     playArtist == '<unknown>'
         ? playArtist = 'Unknown'
         : playArtist = response.artist!;
 
-    final String playAlbum = response.album != null ? response.album! : '<unknown>';
+    final String playAlbum =
+        response.album != null ? response.album! : '<unknown>';
     final int playDuration = response.duration ?? 180000;
-    final String? imagePath = '${tempDir.path}/${response.displayNameWOExt}.png';
+    final String? imagePath =
+        '${tempDir.path}/${response.displayNameWOExt}.png';
 
     final MediaItem tempDict = MediaItem(
       id: response.id.toString(),
@@ -111,7 +112,7 @@ class PlayerInvoke {
       final List<MediaItem> queue = [];
       queue.addAll(
         response.map(
-              (song) => MediaItem(
+          (song) => MediaItem(
             id: song['id'].toString(),
             album: song['album'].toString(),
             artist: song['artist'].toString(),
@@ -162,52 +163,93 @@ class PlayerInvoke {
     final List<MediaItem> queue = [];
     queue.addAll(
       response.map(
-            (song) => MediaItemConverter.downMapToMediaItem(song as Map),
+        (song) => MediaItemConverter.downMapToMediaItem(song as Map),
       ),
     );
     updateNplay(queue, index);
   }
 
   static Future<void> refreshYtLink(Map playItem) async {
-    // final bool cacheSong =
-    // Hive.box('settings').get('cacheSong', defaultValue: false) as bool;
-    final int expiredAt = int.parse((playItem['expire_at'] ?? '0').toString());
-    if ((DateTime.now().millisecondsSinceEpoch ~/ 1000) + 350 > expiredAt) {
-      Logger.root.info(
-        'before service | youtube link expired for ${playItem["title"]}',
-      );
-      if (Hive.box('ytlinkcache').containsKey(playItem['id'])) {
-        final cache = await Hive.box('ytlinkcache').get(playItem['id']);
-        if (cache is List) {
-          int minExpiredAt = 0;
-          for (final e in cache) {
-            final int cachedExpiredAt = int.parse(e['expireAt'].toString());
-            if (minExpiredAt == 0 || cachedExpiredAt < minExpiredAt) {
-              minExpiredAt = cachedExpiredAt;
-            }
-          }
 
-          if ((DateTime.now().millisecondsSinceEpoch ~/ 1000) + 350 >
-              minExpiredAt) {
-            // cache expired
-            Logger.root
-                .info('youtube link expired in cache for ${playItem["title"]}');
+    try {
+      final int expiredAt =
+          int.parse((playItem['expire_at'] ?? '0').toString());
+      final int currentTime = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+      final int timeUntilExpiry = expiredAt - currentTime;
+
+
+      if (currentTime + 350 > expiredAt) {
+        Logger.root.info(
+          'before service | youtube link expired for ${playItem["title"]}',
+        );
+
+        if (Hive.isBoxOpen('ytlinkcache') &&
+            Hive.box('ytlinkcache').containsKey(playItem['id'])) {
+          final cache = Hive.box('ytlinkcache').get(playItem['id']);
+
+          if (cache is List && cache.isNotEmpty) {
+            int minExpiredAt = 0;
+            for (final e in cache) {
+              try {
+                final int cachedExpiredAt = int.parse(e['expireAt'].toString());
+                if (minExpiredAt == 0 || cachedExpiredAt < minExpiredAt) {
+                  minExpiredAt = cachedExpiredAt;
+                }
+              } catch (e) {
+                minExpiredAt = 0;
+                break;
+              }
+            }
+
+
+            if (minExpiredAt > 0 && currentTime + 350 > minExpiredAt) {
+              // cache expired
+              Logger.root.info(
+                  'youtube link expired in cache for ${playItem["title"]}');
+              final newData = await YouTubeServices.instance
+                  .refreshLink(playItem['id'].toString());
+              Logger.root.info(
+                'before service | received new link for ${playItem["title"]}',
+              );
+              if (newData != null &&
+                  newData['url'] != null &&
+                  newData['url'].toString().isNotEmpty) {
+                playItem['url'] = newData['url'];
+                playItem['duration'] = newData['duration'];
+                playItem['expire_at'] = newData['expire_at'];
+              } else {
+                throw Exception(
+                    'Failed to refresh YouTube link: API returned null or empty');
+              }
+            } else {
+              // giving cache link
+              Logger.root
+                  .info('youtube link found in cache for ${playItem["title"]}');
+              final lastCacheItem = cache.last as Map;
+              if (lastCacheItem['url'] != null &&
+                  lastCacheItem['url'].toString().isNotEmpty) {
+                playItem['url'] = lastCacheItem['url'];
+                playItem['expire_at'] = lastCacheItem['expireAt'];
+              } else {
+                throw Exception('Cached URL is null or empty');
+              }
+            }
+          } else {
             final newData = await YouTubeServices.instance
                 .refreshLink(playItem['id'].toString());
             Logger.root.info(
               'before service | received new link for ${playItem["title"]}',
             );
-            if (newData != null) {
+            if (newData != null &&
+                newData['url'] != null &&
+                newData['url'].toString().isNotEmpty) {
               playItem['url'] = newData['url'];
               playItem['duration'] = newData['duration'];
               playItem['expire_at'] = newData['expire_at'];
+            } else {
+              throw Exception(
+                  'Failed to refresh YouTube link: API returned null or empty');
             }
-          } else {
-            // giving cache link
-            Logger.root
-                .info('youtube link found in cache for ${playItem["title"]}');
-            playItem['url'] = cache.last['url'];
-            playItem['expire_at'] = cache.last['expireAt'];
           }
         } else {
           final newData = await YouTubeServices.instance
@@ -215,47 +257,49 @@ class PlayerInvoke {
           Logger.root.info(
             'before service | received new link for ${playItem["title"]}',
           );
-          if (newData != null) {
+          if (newData != null &&
+              newData['url'] != null &&
+              newData['url'].toString().isNotEmpty) {
             playItem['url'] = newData['url'];
             playItem['duration'] = newData['duration'];
             playItem['expire_at'] = newData['expire_at'];
+          } else {
+            throw Exception(
+                'Failed to refresh YouTube link: API returned null or empty');
           }
         }
       } else {
-        final newData = await YouTubeServices.instance
-            .refreshLink(playItem['id'].toString());
-        Logger.root.info(
-          'before service | received new link for ${playItem["title"]}',
-        );
-        if (newData != null) {
-          playItem['url'] = newData['url'];
-          playItem['duration'] = newData['duration'];
-          playItem['expire_at'] = newData['expire_at'];
-        }
       }
+    } catch (e) {
+      Logger.root
+          .severe('Error refreshing YouTube link for ${playItem["title"]}', e);
+      rethrow;
     }
   }
 
   static Future<void> setValues(
-      List response,
-      int index, {
-        bool recommend = true,
-        // String? playlistBox,
-      }) async {
+    List response,
+    int index, {
+    bool recommend = true,
+    // String? playlistBox,
+  }) async {
+
     final List<MediaItem> queue = [];
     final Map playItem = response[index] as Map;
     final Map? nextItem =
-    index == response.length - 1 ? null : response[index + 1] as Map;
+        index == response.length - 1 ? null : response[index + 1] as Map;
+
     if (playItem['genre'] == 'YouTube') {
       await refreshYtLink(playItem);
     }
+
     if (nextItem != null && nextItem['genre'] == 'YouTube') {
       await refreshYtLink(nextItem);
     }
 
     queue.addAll(
       response.map(
-            (song) => MediaItemConverter.mapToMediaItem(
+        (song) => MediaItemConverter.mapToMediaItem(
           song as Map,
           autoplay: recommend,
           // playlistBox: playlistBox,
@@ -271,9 +315,9 @@ class PlayerInvoke {
     await audioHandler.customAction('skipToMediaItem', {'id': queue[index].id});
     await audioHandler.play();
     final String repeatMode =
-    Hive.box('settings').get('repeatMode', defaultValue: 'None').toString();
+        Hive.box('settings').get('repeatMode', defaultValue: 'None').toString();
     final bool enforceRepeat =
-    Hive.box('settings').get('enforceRepeat', defaultValue: false) as bool;
+        Hive.box('settings').get('enforceRepeat', defaultValue: false) as bool;
     if (enforceRepeat) {
       switch (repeatMode) {
         case 'None':

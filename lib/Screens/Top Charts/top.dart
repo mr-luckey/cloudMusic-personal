@@ -3,7 +3,7 @@
 import 'package:app_links/app_links.dart';
 import 'package:blackhole/APIs/spotify_api.dart';
 import 'package:blackhole/CustomWidgets/custom_physics.dart';
-import 'package:blackhole/CustomWidgets/drawer.dart';
+// import 'package:blackhole/CustomWidgets/drawer.dart';
 import 'package:blackhole/CustomWidgets/empty_screen.dart';
 import 'package:blackhole/CustomWidgets/image_card.dart';
 import 'package:blackhole/Helpers/spotify_country.dart';
@@ -225,15 +225,10 @@ Future<void> scrapData(String type, {bool signIn = false}) async {
   }
 }
 
-class TopPage extends StatefulWidget {
+class TopPage extends StatelessWidget {
   final String type;
   const TopPage({super.key, required this.type});
-  @override
-  _TopPageState createState() => _TopPageState();
-}
 
-class _TopPageState extends State<TopPage>
-    with AutomaticKeepAliveClientMixin<TopPage> {
   Future<void> getCachedData(String type) async {
     if (type == 'Global') {
       globalFetched = true;
@@ -247,26 +242,20 @@ class _TopPageState extends State<TopPage>
       localSongs = await Hive.box('cache')
           .get('${type}_chart', defaultValue: []) as List;
     }
-    setState(() {});
-  }
-
-  @override
-  bool get wantKeepAlive => true;
-
-  @override
-  void initState() {
-    super.initState();
-    getCachedData(widget.type);
-    scrapData(widget.type);
+    // Trigger rebuild using ValueNotifier
+    if (type == 'Global') {
+      globalFetchFinished.value = globalFetchFinished.value;
+    } else {
+      localFetchFinished.value = localFetchFinished.value;
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    super.build(context);
-    final bool isGlobal = widget.type == 'Global';
+    final bool isGlobal = type == 'Global';
     if ((isGlobal && !globalFetched) || (!isGlobal && !localFetched)) {
-      getCachedData(widget.type);
-      scrapData(widget.type);
+      getCachedData(type);
+      scrapData(type);
     }
     return ValueListenableBuilder(
       valueListenable: isGlobal ? globalFetchFinished : localFetchFinished,
@@ -280,7 +269,7 @@ class _TopPageState extends State<TopPage>
                 child: Center(
                   child: TextButton(
                     onPressed: () {
-                      scrapData(widget.type, signIn: true);
+                      scrapData(type, signIn: true);
                     },
                     style: TextButton.styleFrom(
                       backgroundColor: Theme.of(context).colorScheme.secondary,

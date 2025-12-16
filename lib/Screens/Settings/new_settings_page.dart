@@ -1,6 +1,6 @@
 // Coded by Naseer Ahmed
 
-import 'package:blackhole/CustomWidgets/drawer.dart';
+// import 'package:blackhole/CustomWidgets/drawer.dart';
 import 'package:blackhole/CustomWidgets/gradient_containers.dart';
 import 'package:blackhole/Screens/Settings/about.dart';
 import 'package:blackhole/Screens/Settings/app_ui.dart';
