@@ -888,6 +888,7 @@ class YouTubeServices {
         if (retryCount > 0) {
           Logger.root.info(
               'Retrying stream manifest retrieval for $videoId (attempt ${retryCount + 1}/${maxRetries + 1})');
+          // Exponential backoff: 500ms, 1000ms, 1500ms
           await Future.delayed(Duration(milliseconds: 500 * retryCount));
         }
 
@@ -896,14 +897,14 @@ class YouTubeServices {
         // CRITICAL FIX: Create fresh instance to avoid state corruption
         freshYt = YoutubeExplode();
 
-        // Add timeout to prevent hanging
+        // Add timeout to prevent hanging - reduced from 30s to 15s for faster failure detection
         final StreamManifest manifest = await freshYt.videos.streamsClient
             .getManifest(VideoId(videoId))
             .timeout(
-          const Duration(seconds: 30),
+          const Duration(seconds: 15),
           onTimeout: () {
             Logger.root.warning(
-                'Stream manifest retrieval timeout for video $videoId');
+                'Stream manifest retrieval timeout (15s) for video $videoId');
             throw Exception(
                 'Timeout while getting stream manifest for video $videoId');
           },
@@ -929,8 +930,8 @@ class YouTubeServices {
           if (m4aStreams.isNotEmpty) {
             Logger.root.fine(
                 'Using ${m4aStreams.length} m4a streams for video $videoId');
-            // Close the instance before returning
-            freshYt.close();
+            // CRITICAL FIX: Don't close the client here - let garbage collector handle it
+            // Closing it causes HttpClientClosedException when the client is still in use
             return m4aStreams;
           } else {
             Logger.root.warning(
@@ -938,8 +939,8 @@ class YouTubeServices {
           }
         }
 
-        // Close the instance before returning
-        freshYt.close();
+        // CRITICAL FIX: Don't close the client here - let garbage collector handle it
+        // The client will be automatically disposed when no longer referenced
         return sortedStreamInfo;
       } catch (e, stackTrace) {
         // Determine error type for better logging
@@ -957,6 +958,8 @@ class YouTubeServices {
           errorType = 'Video unplayable';
         } else if (e.toString().contains('SocketException')) {
           errorType = 'Network error';
+        } else if (e.toString().contains('HttpClientClosedException')) {
+          errorType = 'HTTP client closed prematurely';
         }
 
         lastError = e is Exception ? e : Exception(e.toString());
@@ -966,8 +969,7 @@ class YouTubeServices {
               'Failed to get stream manifest for video $videoId after ${maxRetries + 1} attempts. Error type: $errorType',
               e,
               stackTrace);
-          // Close instance on error
-          freshYt?.close();
+          // Don't close on error either - may cause cascading failures
           rethrow;
         }
 
@@ -975,8 +977,7 @@ class YouTubeServices {
             'Error getting stream manifest for video $videoId (attempt ${retryCount + 1}/${maxRetries + 1}). Error type: $errorType. Will retry...',
             e);
 
-        // Close instance before retry
-        freshYt?.close();
+        // Don't close instance before retry - let it be garbage collected
       }
 
       retryCount++;
