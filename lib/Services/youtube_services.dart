@@ -133,8 +133,16 @@ class YouTubeServices {
         quality = 'Low';
       }
 
-      // 1) Try via YouTube Music API (often better metadata)
+      // Helper function to check validity of response
+      bool isValid(Map? res) {
+        return res != null &&
+            res['url'] != null &&
+            res['url'].toString().isNotEmpty;
+      }
+
+      // Try YouTube Music first (preferred for metadata)
       if (useYTM) {
+        Logger.root.info('Attempting YTM fetch for $id');
         try {
           final Map ytmRes = await YtMusicService()
               .getSongData(
@@ -142,37 +150,34 @@ class YouTubeServices {
             quality: quality,
           )
               .timeout(
-            const Duration(seconds: 30),
+            const Duration(seconds: 20), // Balanced timeout
             onTimeout: () {
               Logger.root.warning('YTM getSongData timeout for $id');
               return <String, dynamic>{};
             },
           );
-          // Validate that we got a valid response with URL
-          if (ytmRes.isNotEmpty &&
-              ytmRes['url'] != null &&
-              ytmRes['url'].toString().isNotEmpty) {
+          if (isValid(ytmRes)) {
+            Logger.root.info('✓ YTM fetch successful for $id');
             return ytmRes;
           } else {
             Logger.root.warning(
-              'YTM refreshLink returned empty/invalid response for $id, falling back to direct YouTubeExplode',
+              'YTM returned empty/invalid response for $id, trying Direct',
             );
-            // Fall through to direct YouTubeExplode flow instead of returning null
           }
         } catch (e, stackTrace) {
           Logger.root.warning(
-            'Error in YTM getSongData for $id, falling back to direct YouTubeExplode',
+            'YTM fetch failed for $id: $e, trying Direct',
             e,
             stackTrace,
           );
-          // Fall through to direct YouTubeExplode flow
         }
       }
 
-      // 2) Fallback: direct YouTubeExplode stream info (more reliable for some long videos)
+      // Fallback: Direct YouTube (more reliable for some videos)
+      Logger.root.info('Attempting Direct YouTube fetch for $id');
       try {
         final Video? directVideo = await getVideoFromId(id).timeout(
-          const Duration(seconds: 30),
+          const Duration(seconds: 20), // Balanced timeout
           onTimeout: () {
             Logger.root.warning('getVideoFromId timeout for $id');
             return null;
@@ -182,20 +187,20 @@ class YouTubeServices {
           Logger.root.warning('Failed to get video from ID (direct): $id');
           return null;
         }
+
         final Map? directData = await formatVideo(
           video: directVideo,
           quality: quality,
         ).timeout(
-          const Duration(seconds: 30),
+          const Duration(seconds: 20), // Balanced timeout
           onTimeout: () {
             Logger.root.warning('formatVideo timeout for $id');
             return null;
           },
         );
-        // Validate that we got a valid response with URL
-        if (directData != null &&
-            directData['url'] != null &&
-            directData['url'].toString().isNotEmpty) {
+
+        if (isValid(directData)) {
+          Logger.root.info('✓ Direct fetch successful for $id');
           return directData;
         } else {
           Logger.root.warning(
@@ -204,8 +209,8 @@ class YouTubeServices {
           return null;
         }
       } catch (e, stackTrace) {
-        Logger.root.warning(
-          'Error in direct YouTubeExplode flow for $id',
+        Logger.root.severe(
+          'Direct YouTube fetch failed for $id',
           e,
           stackTrace,
         );
@@ -897,14 +902,14 @@ class YouTubeServices {
         // CRITICAL FIX: Create fresh instance to avoid state corruption
         freshYt = YoutubeExplode();
 
-        // Add timeout to prevent hanging - reduced from 30s to 15s for faster failure detection
+        // Add timeout to prevent hanging - 20s is a balance between speed and reliability
         final StreamManifest manifest = await freshYt.videos.streamsClient
             .getManifest(VideoId(videoId))
             .timeout(
-          const Duration(seconds: 15),
+          const Duration(seconds: 20),
           onTimeout: () {
             Logger.root.warning(
-                'Stream manifest retrieval timeout (15s) for video $videoId');
+                'Stream manifest retrieval timeout (20s) for video $videoId');
             throw Exception(
                 'Timeout while getting stream manifest for video $videoId');
           },
@@ -945,8 +950,14 @@ class YouTubeServices {
       } catch (e, stackTrace) {
         // Determine error type for better logging
         String errorType = 'Unknown error';
-        if (e.toString().contains('Null check operator used on a null value')) {
+        if (e.toString().contains('Null check operator used on a null value') ||
+            e
+                .toString()
+                .contains('type \'Null\' is not a subtype of type \'Uri\'')) {
           errorType = 'Null check error (possible API response change)';
+        } else if (e.toString().contains('403') ||
+            e.toString().contains('returned 403')) {
+          errorType = '403 Forbidden (YouTube blocking request)';
         } else if (e.toString().contains('timeout') ||
             e.toString().contains('Timeout')) {
           errorType = 'Timeout error';
