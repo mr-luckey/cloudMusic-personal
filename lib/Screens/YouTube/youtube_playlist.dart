@@ -176,24 +176,48 @@ class YouTubePlaylistController extends GetxController {
     done.value = false;
     
     try {
+      // Get the stream URL for the clicked song
       final Map? response = await YouTubeServices.instance.formatVideoFromId(
         id: entry['id'].toString(),
         data: entry,
       );
       
-      done.value = true;
-      
       if (response == null || response.isEmpty) {
         Logger.root.warning(
           'Failed to get stream URL for video ${entry['id']} in handleSongTap',
         );
+        done.value = true;
         return;
       }
       
+      // Find the index of the clicked song in the playlist
+      final int clickedIndex = searchedList.indexWhere(
+        (item) => item['id'].toString() == entry['id'].toString(),
+      );
+      
+      if (clickedIndex == -1) {
+        // Song not found in playlist, play just this song
+        done.value = true;
+        PlayerInvoke.init(
+          songsList: [response],
+          index: 0,
+          isOffline: false,
+        );
+        return;
+      }
+      
+      // Create playlist with the clicked song having the stream URL
+      final List<Map> playList = List.from(searchedList);
+      playList[clickedIndex] = response;
+      
+      done.value = true;
+      
+      // Play the full playlist starting from the clicked song
       PlayerInvoke.init(
-        songsList: [response],
-        index: 0,
+        songsList: playList,
+        index: clickedIndex,
         isOffline: false,
+        recommend: false,
       );
     } catch (e, stackTrace) {
       Logger.root.severe(

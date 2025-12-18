@@ -379,7 +379,6 @@ class AudioPlayerHandlerImpl extends BaseAudioHandler
   Future<AudioSource?> _itemToSource(MediaItem mediaItem) async {
     AudioSource? audioSource;
     try {
-
       if (mediaItem.artUri.toString().startsWith('file:')) {
         try {
           final urlStr = mediaItem.extras?['url']?.toString();
@@ -442,11 +441,18 @@ class AudioPlayerHandlerImpl extends BaseAudioHandler
 
               // When building a whole queue, never block on network for
               // YouTube items. We only create sources if we already have
-              // a URL; otherwise we skip them and they can be added later
-              // on demand (e.g. when user plays them explicitly or via
-              // background recommendation job).
+              // a valid stream URL (not just a watch URL); otherwise we skip 
+              // them and they can be added later on demand.
               if (_isBuildingSources) {
-                if (urlString.isEmpty) {
+                // Check if URL is a valid stream URL, not just a watch URL
+                final bool isValidStreamUrl = urlString.isNotEmpty &&
+                    (urlString.contains('googlevideo.com') || 
+                     urlString.contains('google.com/videoplayback'));
+                
+                if (!isValidStreamUrl) {
+                  Logger.root.info(
+                    'Skipping ${mediaItem.id} in queue build - no valid stream URL (url: ${urlString.isEmpty ? "empty" : "watch URL"})',
+                  );
                   return null;
                 }
                 try {
@@ -470,11 +476,19 @@ class AudioPlayerHandlerImpl extends BaseAudioHandler
                 final int currentTime =
                     DateTime.now().millisecondsSinceEpoch ~/ 1000;
 
+                Logger.root.info(
+                    'AudioService | Processing ${mediaItem.id} | Current: $currentTime | ExpireAt: $expiredAt | Diff: ${expiredAt - currentTime}');
 
-                // If we don't have a URL yet or it is expired/expiring soon,
+                // Check if URL is a valid stream URL (not just a watch URL)
+                final bool isValidStreamUrl = urlString.isNotEmpty &&
+                    (urlString.contains('googlevideo.com') || 
+                     urlString.contains('google.com/videoplayback'));
+                
+                // If we don't have a valid stream URL or it is expired/expiring soon,
                 // refresh it synchronously for THIS item only.
-                if (urlString.isEmpty || currentTime + 350 > expiredAt) {
-
+                if (!isValidStreamUrl || currentTime + 350 > expiredAt) {
+                  Logger.root.info(
+                      'AudioService | Origin URL expired/soon-expired. Refreshing... ${mediaItem.id}');
                   Map? newData;
                   int retryCount = 0;
                   const maxRetries = 1;
@@ -502,6 +516,8 @@ class AudioPlayerHandlerImpl extends BaseAudioHandler
                       if (newData != null &&
                           newData['url'] != null &&
                           newData['url'].toString().isNotEmpty) {
+                        Logger.root.info(
+                            'AudioService | Refresh SUCCESS for ${mediaItem.id}. New URL found.');
                         break;
                       } else {
                         if (retryCount >= maxRetries) {
@@ -537,6 +553,9 @@ class AudioPlayerHandlerImpl extends BaseAudioHandler
                     // the cache and use the URL locally here).
                     final freshUrl = newData['url'].toString();
 
+                    Logger.root.info(
+                        'AudioService | Using FRESH URL for ${mediaItem.id}');
+
                     // Update cache if URLs data is available
                     try {
                       final List<Map>? urlsData =
@@ -546,8 +565,7 @@ class AudioPlayerHandlerImpl extends BaseAudioHandler
                           if (Hive.isBoxOpen('ytlinkcache')) {
                             await Hive.box('ytlinkcache')
                                 .put(mediaItem.id, urlsData);
-                          } else {
-                          }
+                          } else {}
                         } catch (e) {
                           Logger.root.warning(
                             'Failed to update cache for ${mediaItem.id}',
@@ -555,8 +573,7 @@ class AudioPlayerHandlerImpl extends BaseAudioHandler
                           );
                         }
                       }
-                    } catch (e) {
-                    }
+                    } catch (e) {}
 
                     try {
                       audioSource = AudioSource.uri(Uri.parse(freshUrl));
@@ -567,12 +584,25 @@ class AudioPlayerHandlerImpl extends BaseAudioHandler
                       return null;
                     }
                   } else {
-                    return null;
+                    // Smart Fallback: If refresh failed, only use existing URL if it's a valid stream URL and NOT yet expired.
+                    if (isValidStreamUrl && currentTime < expiredAt) {
+                      Logger.root.warning(
+                          'Refresh failed, but existing URL is still valid for ${(expiredAt - currentTime)}s. Falling back to it.');
+                      try {
+                        audioSource = AudioSource.uri(Uri.parse(urlString));
+                      } catch (e) {
+                        Logger.root.severe('Invalid fallback URL: $e');
+                        return null;
+                      }
+                    } else {
+                      Logger.root.severe(
+                          'Refresh failed and no valid stream URL available. Cannot play ${mediaItem.title}');
+                      return null;
+                    }
                   }
                 } else {
-                  if (urlString.isEmpty) {
-                    return null;
-                  }
+                  Logger.root.info(
+                      'AudioService | URL valid (expireAt in future). Using existing URL for ${mediaItem.id}');
                   try {
                     audioSource = AudioSource.uri(Uri.parse(urlString));
                   } catch (e) {
@@ -642,8 +672,7 @@ class AudioPlayerHandlerImpl extends BaseAudioHandler
 
     if (audioSource != null) {
       _mediaItemExpando[audioSource] = mediaItem;
-    } else {
-    }
+    } else {}
 
     return audioSource;
   }

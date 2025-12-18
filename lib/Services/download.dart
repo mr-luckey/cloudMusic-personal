@@ -67,27 +67,38 @@ class Download with ChangeNotifier {
 
       if (Platform.isAndroid || Platform.isIOS) {
         Logger.root.info('Requesting storage permission');
+        bool permissionGranted = false;
 
-        // Request storage permission
-        PermissionStatus status = await Permission.storage.status;
-
-        if (status.isDenied) {
-          status = await Permission.storage.request();
-        }
-
-        // For Android 13+ (API 33+), also need media permissions
         if (Platform.isAndroid) {
           final deviceInfo = await DeviceInfoPlugin().androidInfo;
           if (deviceInfo.version.sdkInt >= 33) {
+            // Android 13+: Request partial permissions (Audio)
             PermissionStatus audioStatus = await Permission.audio.status;
             if (audioStatus.isDenied) {
               audioStatus = await Permission.audio.request();
             }
+            if (!audioStatus.isDenied && !audioStatus.isPermanentlyDenied) {
+              permissionGranted = true;
+            }
+          } else {
+            // Android < 13: Request Storage
+            PermissionStatus status = await Permission.storage.status;
+            if (status.isDenied) {
+              status = await Permission.storage.request();
+            }
+            if (!status.isDenied && !status.isPermanentlyDenied) {
+              permissionGranted = true;
+            }
           }
+        } else {
+          // iOS
+          // Usually straightforward, checks storage or photos if needed
+          permissionGranted =
+              true; // Assuming OK for now as iOS handles it differently or mostly sandboxed
         }
 
-        if (status.isPermanentlyDenied) {
-          Logger.root.info('Request permanently denied');
+        if (Platform.isAndroid && !permissionGranted) {
+          Logger.root.info('Permissions not granted');
           await openAppSettings();
           return;
         }
@@ -390,7 +401,14 @@ class Download with ChangeNotifier {
 
       String kUrl = data['url'].toString();
 
-      if (!data['url'].toString().contains('google')) {
+      // Detect if this is a YouTube song by checking language/genre or URL pattern
+      final bool isYouTubeSong = data['language']?.toString() == 'YouTube' ||
+          data['genre']?.toString() == 'YouTube' ||
+          data['url']?.toString().contains('google') == true ||
+          data['url']?.toString().contains('youtube.com/watch') == true ||
+          data['perma_url']?.toString().contains('youtube.com') == true;
+
+      if (!isYouTubeSong) {
         Logger.root
             .info('Fetching jiosaavn download url with preferred quality');
         kUrl = kUrl.replaceAll(
@@ -404,14 +422,30 @@ class Download with ChangeNotifier {
       Client? client;
       Stream<List<int>> stream;
 
-      if (data['url'].toString().contains('google')) {
+      if (isYouTubeSong) {
         try {
-          final AudioOnlyStreamInfo streamInfo = (await YouTubeServices.instance
-                  .getStreamInfo(data['id'].toString()))
-              .last;
+          Logger.root.info('Downloading YouTube song: ${data['title']}');
+          final streamInfoList = await YouTubeServices.instance
+              .getStreamInfo(data['id'].toString());
+          
+          if (streamInfoList.isEmpty) {
+            Logger.root.severe('No stream info available for YouTube song ${data['id']}');
+            progress = 0.0;
+            notifyListeners();
+            return;
+          }
+          
+          // Select quality based on preference
+          AudioOnlyStreamInfo streamInfo;
+          if (preferredYtDownloadQuality == 'High' && streamInfoList.length > 1) {
+            streamInfo = streamInfoList.last;
+          } else {
+            streamInfo = streamInfoList.first;
+          }
+          
           total = streamInfo.size.totalBytes;
-
           stream = YouTubeServices.instance.getStreamClient(streamInfo);
+          Logger.root.info('YouTube stream ready: ${streamInfo.size.totalMegaBytes.toStringAsFixed(2)} MB');
         } catch (e, stackTrace) {
           Logger.root.severe('Error getting YouTube stream', e, stackTrace);
 
