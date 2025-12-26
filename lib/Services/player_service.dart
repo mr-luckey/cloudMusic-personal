@@ -169,90 +169,111 @@ class PlayerInvoke {
     updateNplay(queue, index);
   }
 
-  /// Refreshes YouTube link if expired. Returns true if successful, false otherwise.
-  /// Does NOT throw exceptions - caller should check return value.
-  static Future<bool> refreshYtLink(Map playItem) async {
+  static Future<void> refreshYtLink(Map playItem) async {
+
     try {
       final int expiredAt =
           int.parse((playItem['expire_at'] ?? '0').toString());
       final int currentTime = DateTime.now().millisecondsSinceEpoch ~/ 1000;
       final int timeUntilExpiry = expiredAt - currentTime;
 
-      // Check if URL already exists and is a valid stream URL (not just a watch URL)
-      final existingUrl = playItem['url']?.toString() ?? '';
-      final bool hasValidStreamUrl = existingUrl.isNotEmpty && 
-          (existingUrl.contains('googlevideo.com') || existingUrl.contains('google.com'));
 
-      // If URL is valid and not expired, no need to refresh
-      if (hasValidStreamUrl && currentTime + 350 <= expiredAt) {
-        Logger.root.info('YouTube URL still valid for ${playItem["title"]}');
-        return true;
-      }
+      if (currentTime + 350 > expiredAt) {
+        Logger.root.info(
+          'before service | youtube link expired for ${playItem["title"]}',
+        );
 
-      Logger.root.info(
-        'before service | youtube link needs refresh for ${playItem["title"]} (expired: ${currentTime + 350 > expiredAt}, hasValidUrl: $hasValidStreamUrl)',
-      );
+        if (Hive.isBoxOpen('ytlinkcache') &&
+            Hive.box('ytlinkcache').containsKey(playItem['id'])) {
+          final cache = Hive.box('ytlinkcache').get(playItem['id']);
 
-      // Try cache first
-      if (Hive.isBoxOpen('ytlinkcache') &&
-          Hive.box('ytlinkcache').containsKey(playItem['id'])) {
-        final cache = Hive.box('ytlinkcache').get(playItem['id']);
-
-        if (cache is List && cache.isNotEmpty) {
-          int minExpiredAt = 0;
-          for (final e in cache) {
-            try {
-              final int cachedExpiredAt = int.parse(e['expireAt'].toString());
-              if (minExpiredAt == 0 || cachedExpiredAt < minExpiredAt) {
-                minExpiredAt = cachedExpiredAt;
+          if (cache is List && cache.isNotEmpty) {
+            int minExpiredAt = 0;
+            for (final e in cache) {
+              try {
+                final int cachedExpiredAt = int.parse(e['expireAt'].toString());
+                if (minExpiredAt == 0 || cachedExpiredAt < minExpiredAt) {
+                  minExpiredAt = cachedExpiredAt;
+                }
+              } catch (e) {
+                minExpiredAt = 0;
+                break;
               }
-            } catch (e) {
-              minExpiredAt = 0;
-              break;
+            }
+
+
+            if (minExpiredAt > 0 && currentTime + 350 > minExpiredAt) {
+              // cache expired
+              Logger.root.info(
+                  'youtube link expired in cache for ${playItem["title"]}');
+              final newData = await YouTubeServices.instance
+                  .refreshLink(playItem['id'].toString());
+              Logger.root.info(
+                'before service | received new link for ${playItem["title"]}',
+              );
+              if (newData != null &&
+                  newData['url'] != null &&
+                  newData['url'].toString().isNotEmpty) {
+                playItem['url'] = newData['url'];
+                playItem['duration'] = newData['duration'];
+                playItem['expire_at'] = newData['expire_at'];
+              } else {
+                throw Exception(
+                    'Failed to refresh YouTube link: API returned null or empty');
+              }
+            } else {
+              // giving cache link
+              Logger.root
+                  .info('youtube link found in cache for ${playItem["title"]}');
+              final lastCacheItem = cache.last as Map;
+              if (lastCacheItem['url'] != null &&
+                  lastCacheItem['url'].toString().isNotEmpty) {
+                playItem['url'] = lastCacheItem['url'];
+                playItem['expire_at'] = lastCacheItem['expireAt'];
+              } else {
+                throw Exception('Cached URL is null or empty');
+              }
+            }
+          } else {
+            final newData = await YouTubeServices.instance
+                .refreshLink(playItem['id'].toString());
+            Logger.root.info(
+              'before service | received new link for ${playItem["title"]}',
+            );
+            if (newData != null &&
+                newData['url'] != null &&
+                newData['url'].toString().isNotEmpty) {
+              playItem['url'] = newData['url'];
+              playItem['duration'] = newData['duration'];
+              playItem['expire_at'] = newData['expire_at'];
+            } else {
+              throw Exception(
+                  'Failed to refresh YouTube link: API returned null or empty');
             }
           }
-
-          // Check if cache is still valid
-          if (minExpiredAt > 0 && currentTime + 350 <= minExpiredAt) {
-            Logger.root.info('youtube link found in cache for ${playItem["title"]}');
-            final lastCacheItem = cache.last as Map;
-            if (lastCacheItem['url'] != null &&
-                lastCacheItem['url'].toString().isNotEmpty) {
-              playItem['url'] = lastCacheItem['url'];
-              playItem['expire_at'] = lastCacheItem['expireAt'];
-              return true;
-            }
+        } else {
+          final newData = await YouTubeServices.instance
+              .refreshLink(playItem['id'].toString());
+          Logger.root.info(
+            'before service | received new link for ${playItem["title"]}',
+          );
+          if (newData != null &&
+              newData['url'] != null &&
+              newData['url'].toString().isNotEmpty) {
+            playItem['url'] = newData['url'];
+            playItem['duration'] = newData['duration'];
+            playItem['expire_at'] = newData['expire_at'];
+          } else {
+            throw Exception(
+                'Failed to refresh YouTube link: API returned null or empty');
           }
         }
-      }
-
-      // Cache miss or expired, fetch fresh URL
-      Logger.root.info('Fetching fresh YouTube link for ${playItem["title"]}');
-      final newData = await YouTubeServices.instance
-          .refreshLink(playItem['id'].toString())
-          .timeout(
-        const Duration(seconds: 30),
-        onTimeout: () {
-          Logger.root.warning('Timeout refreshing YouTube link for ${playItem["title"]}');
-          return null;
-        },
-      );
-
-      if (newData != null &&
-          newData['url'] != null &&
-          newData['url'].toString().isNotEmpty) {
-        playItem['url'] = newData['url'];
-        playItem['duration'] = newData['duration'] ?? playItem['duration'];
-        playItem['expire_at'] = newData['expire_at'];
-        Logger.root.info('Successfully refreshed YouTube link for ${playItem["title"]}');
-        return true;
       } else {
-        Logger.root.warning('Failed to refresh YouTube link for ${playItem["title"]}: API returned null or empty');
-        return false;
       }
     } catch (e) {
-      Logger.root.severe('Error refreshing YouTube link for ${playItem["title"]}', e);
-      return false;
+      Logger.root
+          .severe('Error refreshing YouTube link for ${playItem["title"]}', e);
+      rethrow;
     }
   }
 
@@ -262,45 +283,30 @@ class PlayerInvoke {
     bool recommend = true,
     // String? playlistBox,
   }) async {
-    try {
-      final List<MediaItem> queue = [];
-      final Map playItem = response[index] as Map;
-      final Map? nextItem =
-          index == response.length - 1 ? null : response[index + 1] as Map;
 
-      // Refresh YouTube link for the current item (required to play)
-      if (playItem['genre'] == 'YouTube' || playItem['language'] == 'YouTube') {
-        final success = await refreshYtLink(playItem);
-        if (!success) {
-          Logger.root.warning('Failed to get YouTube URL for ${playItem["title"]}, playback may fail');
-          // Continue anyway - the audio service will handle the error
-        }
-      }
+    final List<MediaItem> queue = [];
+    final Map playItem = response[index] as Map;
+    final Map? nextItem =
+        index == response.length - 1 ? null : response[index + 1] as Map;
 
-      // Pre-fetch next item in background (non-blocking)
-      if (nextItem != null && (nextItem['genre'] == 'YouTube' || nextItem['language'] == 'YouTube')) {
-        // Don't await - let it happen in background
-        refreshYtLink(nextItem).then((success) {
-          if (!success) {
-            Logger.root.info('Background refresh failed for next item ${nextItem["title"]}');
-          }
-        });
-      }
-
-      queue.addAll(
-        response.map(
-          (song) => MediaItemConverter.mapToMediaItem(
-            song as Map,
-            autoplay: recommend,
-            // playlistBox: playlistBox,
-          ),
-        ),
-      );
-      await updateNplay(queue, index);
-    } catch (e, stackTrace) {
-      Logger.root.severe('Error in setValues', e, stackTrace);
-      // Don't rethrow - we don't want to crash the app
+    if (playItem['genre'] == 'YouTube') {
+      await refreshYtLink(playItem);
     }
+
+    if (nextItem != null && nextItem['genre'] == 'YouTube') {
+      await refreshYtLink(nextItem);
+    }
+
+    queue.addAll(
+      response.map(
+        (song) => MediaItemConverter.mapToMediaItem(
+          song as Map,
+          autoplay: recommend,
+          // playlistBox: playlistBox,
+        ),
+      ),
+    );
+    await updateNplay(queue, index);
   }
 
   static Future<void> updateNplay(List<MediaItem> queue, int index) async {

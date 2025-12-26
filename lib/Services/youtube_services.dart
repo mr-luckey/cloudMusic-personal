@@ -730,7 +730,7 @@ class YouTubeServices {
 
   String getExpireAt(String url) {
     try {
-      final match = RegExp(r'expire=(\d+)').firstMatch(url);
+      final match = RegExp(r'expire=(\d+)&').firstMatch(url);
       if (match != null && match.group(1) != null) {
         final expireAt = match.group(1)!;
         return expireAt;
@@ -819,6 +819,7 @@ class YouTubeServices {
           stackTrace,
         );
       }
+
       return urlData;
     } catch (e, stackTrace) {
       final String errorStr = e.toString();
@@ -851,18 +852,38 @@ class YouTubeServices {
       final List<AudioOnlyStreamInfo> sortedStreamInfo =
           await getStreamInfo(videoId);
 
-      final result = sortedStreamInfo
-          .map(
-            (e) => {
-              'bitrate': e.bitrate.kiloBitsPerSecond.round().toString(),
-              'codec': e.codec.subtype,
-              'qualityLabel': e.qualityLabel,
-              'size': e.size.totalMegaBytes.toStringAsFixed(2),
-              'url': e.url.toString(),
-              'expireAt': getExpireAt(e.url.toString()),
-            },
-          )
-          .toList();
+      // Filter out streams with null URLs and map to result format
+      // Note: Despite type annotations, url CAN be null at runtime for some videos
+      final result = <Map>[];
+      for (final streamInfo in sortedStreamInfo) {
+        try {
+          // Try to access the URL - will throw if null at runtime
+          final urlString = streamInfo.url.toString();
+          if (urlString.isNotEmpty) {
+            result.add({
+              'bitrate':
+                  streamInfo.bitrate.kiloBitsPerSecond.round().toString(),
+              'codec': streamInfo.codec.subtype,
+              'qualityLabel': streamInfo.qualityLabel,
+              'size': streamInfo.size.totalMegaBytes.toStringAsFixed(2),
+              'url': urlString,
+              'expireAt': getExpireAt(urlString),
+            });
+          }
+        } catch (e) {
+          // Skip streams with null or invalid URLs (common in long videos)
+          Logger.root.fine(
+              'Skipping stream with null/invalid URL for video $videoId: $e');
+          continue;
+        }
+      }
+
+      // Validate that we have at least one valid stream
+      if (result.isEmpty) {
+        Logger.root.severe(
+            'All streams for video $videoId have null URLs - cannot play this video');
+        throw Exception('No valid stream URLs available for video $videoId');
+      }
 
       Logger.root.info(
           'Successfully extracted ${result.length} stream URLs for video $videoId');

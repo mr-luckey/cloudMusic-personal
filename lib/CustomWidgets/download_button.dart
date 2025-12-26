@@ -42,17 +42,13 @@ class DownloadButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final songId = data['id']?.toString() ?? 'unknown_id';
-    
     return SizedBox.square(
       dimension: 50,
       child: Center(
         child: GetBuilder<DownloadButtonController>(
-          tag: songId,
-          init: DownloadButtonController(songId: songId),
+          tag: data['id'].toString(),
           builder: (controller) {
-            final id = data['id']?.toString() ?? 'unknown_id';
-            return (controller.downloadsBox.containsKey(id))
+            return (controller.downloadsBox.containsKey(data['id']))
                 ? IconButton(
                     icon: const Icon(Icons.download_done_rounded),
                     tooltip: 'Download Done',
@@ -90,7 +86,7 @@ class DownloadButton extends StatelessWidget {
                               child: CircularProgressIndicator(
                                 value: controller.down.progress == 1
                                     ? null
-                                    : (controller.down.progress ?? 0),
+                                    : controller.down.progress,
                               ),
                             ),
                             Center(
@@ -109,7 +105,7 @@ class DownloadButton extends StatelessWidget {
                                             child: Text(
                                               controller.down.progress == null
                                                   ? '0%'
-                                                  : '${(100 * (controller.down.progress ?? 0)).round()}%',
+                                                  : '${(100 * controller.down.progress!).round()}%',
                                             ),
                                           ),
                                         if (showValue)
@@ -123,9 +119,9 @@ class DownloadButton extends StatelessWidget {
                                                   .iconTheme
                                                   .color,
                                               tooltip: AppLocalizations.of(
-                                                    context,
-                                                  )?.stopDown ??
-                                                  'Stop Download',
+                                                context,
+                                              )!
+                                                  .stopDown,
                                               onPressed: () {
                                                 controller.down.download =
                                                     false;
@@ -217,8 +213,7 @@ class MultiDownloadButton extends StatelessWidget {
                     ),
                     color: Theme.of(context).colorScheme.secondary,
                     iconSize: 25.0,
-                    tooltip: AppLocalizations.of(context)?.downDone ??
-                        'Download Done',
+                    tooltip: AppLocalizations.of(context)!.downDone,
                     onPressed: () {},
                   )
                 : controller.down.progress == 0
@@ -228,8 +223,7 @@ class MultiDownloadButton extends StatelessWidget {
                             Icons.download_rounded,
                           ),
                           iconSize: 25.0,
-                          tooltip:
-                              AppLocalizations.of(context)?.down ?? 'Download',
+                          tooltip: AppLocalizations.of(context)!.down,
                           onPressed: () async {
                             // AdManager.showInterstitialAd();
                             // rewardedAdManager.showRewardedAd(context, () async {
@@ -255,7 +249,7 @@ class MultiDownloadButton extends StatelessWidget {
                               child: Text(
                                 controller.down.progress == null
                                     ? '0%'
-                                    : '${(100 * (controller.down.progress ?? 0)).round()}%',
+                                    : '${(100 * controller.down.progress!).round()}%',
                               ),
                             ),
                             Center(
@@ -357,8 +351,7 @@ class AlbumDownloadButton extends StatelessWidget {
                       ),
                       color: Theme.of(context).colorScheme.secondary,
                       iconSize: 25.0,
-                      tooltip: AppLocalizations.of(context)?.downDone ??
-                          'Download Done',
+                      tooltip: AppLocalizations.of(context)!.downDone,
                       onPressed: () {},
                     )
                   : controller.down.progress == 0
@@ -369,13 +362,12 @@ class AlbumDownloadButton extends StatelessWidget {
                             ),
                             iconSize: 25.0,
                             color: Theme.of(context).iconTheme.color,
-                            tooltip: AppLocalizations.of(context)?.down ??
-                                'Download',
+                            tooltip: AppLocalizations.of(context)!.down,
                             onPressed: () async {
                               // AdManager.showInterstitialAd();
                               ShowSnackBar().showSnackBar(
                                 context,
-                                '${AppLocalizations.of(context)?.downingAlbum ?? 'Downloading album'} "$albumName"',
+                                '${AppLocalizations.of(context)!.downingAlbum} "$albumName"',
                               );
 
                               // rewardedAdManager.showRewardedAd(context, () async {
@@ -403,7 +395,7 @@ class AlbumDownloadButton extends StatelessWidget {
                               child: Text(
                                 controller.down.progress == null
                                     ? '0%'
-                                    : '${(100 * (controller.down.progress ?? 0)).round()}%',
+                                    : '${(100 * controller.down.progress!).round()}%',
                               ),
                             ),
                             Center(
