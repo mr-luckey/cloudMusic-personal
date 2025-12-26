@@ -33,22 +33,22 @@ if (keystorePropertiesFile.exists()) {
 
 def flutterVersionCode = localProperties.getProperty('flutter.versionCode')
 if (flutterVersionCode == null) {
-    flutterVersionCode = '20'
+    flutterVersionCode = '19'
 }
 
 def flutterVersionName = localProperties.getProperty('flutter.versionName')
 if (flutterVersionName == null) {
-    flutterVersionName = '20.0'
+    flutterVersionName = '19.0'
 }
 
 android {
-    compileSdkVersion 35
+    compileSdkVersion 36
     ndkVersion "27.0.12077973"
     namespace 'com.appware.cloudSpot'
 
     defaultConfig {
         ndk {
-            abiFilters 'armeabi-v7a', 'arm64-v8a', 'x86', 'x86_64'
+            abiFilters 'armeabi-v7a', 'arm64-v8a', 'x86_64'
         }
     }
 
@@ -59,14 +59,11 @@ android {
     defaultConfig {
         applicationId "com.appware.cloudSpot"
         minSdkVersion flutter.minSdkVersion
-        targetSdkVersion 35
+        targetSdkVersion 36
         multiDexEnabled true
         // viewBinding true
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
-        
-        // Maximum device compatibility settings
-        vectorDrawables.useSupportLibrary = true
     }
      signingConfigs {
  //        useProguard true
