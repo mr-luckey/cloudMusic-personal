@@ -158,9 +158,9 @@ class NavClass {
 
   static dynamic nav(var root, List items) {
     try {
-      print('root');
+      print("root");
       print(root);
-      print('items');
+      print("items");
       print(items);
       print('ekjioejdiejdiejdoejfciejviejfcrf,,,,,,,,,,,,,,,,,,,,,,');
       var res = root;
@@ -170,7 +170,7 @@ class NavClass {
       print(res); //FIXME:not working
       return res;
     } catch (e) {
-      print('error');
+      print("error");
       print(e);
       return null;
     }

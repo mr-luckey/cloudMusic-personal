@@ -15,17 +15,6 @@ pluginManagement {
         includeBuild("${flutterSdkPath}/packages/flutter_tools/gradle")
     }
     repositories {
-        // Flutter repository for plugin resolution
-        def flutterPath = localProperties.getProperty('flutter.sdk')
-        if (flutterPath != null) {
-            maven { 
-                url = uri("${flutterPath}/bin/internal/repo")
-            }
-        }
-        // Flutter remote repository as fallback
-        maven {
-            url = uri("https://storage.googleapis.com/download.flutter.io")
-        }
         google()
         mavenCentral()
         gradlePluginPortal()
@@ -37,15 +26,17 @@ plugins {
     id "dev.flutter.flutter-plugin-loader" version "1.0.0"
 
     // Plugin versions centralized here
-    id "com.android.application" version "8.6.0" apply false
-    id "org.jetbrains.kotlin.android" version "2.1.0" apply false
+    id "com.android.application" version "8.3.0" apply false
+    id "org.jetbrains.kotlin.android" version "1.9.25" apply false
     id "com.google.gms.google-services" version "4.4.2" apply false
 }
 
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.PREFER_PROJECT)
     repositories {
-        // Flutter local repository must be first to resolve io.flutter artifacts
+        google()
+        mavenCentral()
+        // Ensure Flutter's local Maven repo is available for io.flutter artifacts
         def localProps = new Properties()
         def lpFile = new File(rootDir, 'local.properties')
         if (lpFile.exists()) {
@@ -53,16 +44,8 @@ dependencyResolutionManagement {
         }
         def flutterPath = localProps.getProperty('flutter.sdk')
         if (flutterPath != null) {
-            maven { 
-                url = uri("${flutterPath}/bin/internal/repo")
-            }
+            maven { url = uri("${flutterPath}/bin/internal/repo") }
         }
-        // Flutter remote repository as fallback
-        maven {
-            url = uri("https://storage.googleapis.com/download.flutter.io")
-        }
-        google()
-        mavenCentral()
     }
 }
 

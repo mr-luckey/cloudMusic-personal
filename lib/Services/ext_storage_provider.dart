@@ -29,7 +29,8 @@ class ExtStorageProvider {
       // checking platform
       if (Platform.isAndroid) {
         if (await requestPermission(Permission.accessMediaLocation)) {
-          directory = await getExternalStorageDirectory();
+          directory = await
+          getExternalStorageDirectory();
           // getting external storage directory
 
           // getting main path
@@ -61,8 +62,7 @@ class ExtStorageProvider {
           return throw 'something went wrong';
         }
       } else if (Platform.isIOS || Platform.isMacOS) {
-        directory =
-            await getApplicationDocumentsDirectory(); // getting application directory
+        directory = await getApplicationDocumentsDirectory();// getting application directory
         final finalDirName = dirName.replaceAll('CloudSpot/', '');
         return '${directory.path}/$finalDirName';
       } else {

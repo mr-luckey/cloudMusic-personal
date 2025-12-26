@@ -53,7 +53,7 @@ class AdManager {
   void _checkAndLoadAd() {
     if (_lastAdShownTime != null) {
       final timeSinceLastAd = DateTime.now().difference(_lastAdShownTime!);
-      if (timeSinceLastAd.inSeconds < 10) {
+      if (timeSinceLastAd.inSeconds < 30) {
         return; // Don't load new ad if less than 100 seconds have passed
       }
     }
