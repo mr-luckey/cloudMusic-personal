@@ -33,16 +33,16 @@ if (keystorePropertiesFile.exists()) {
 
 def flutterVersionCode = localProperties.getProperty('flutter.versionCode')
 if (flutterVersionCode == null) {
-    flutterVersionCode = '19'
+    flutterVersionCode = '18'
 }
 
 def flutterVersionName = localProperties.getProperty('flutter.versionName')
 if (flutterVersionName == null) {
-    flutterVersionName = '19.0'
+    flutterVersionName = '18.0'
 }
 
 android {
-    compileSdkVersion 36
+    compileSdkVersion 35
     ndkVersion "27.0.12077973"
     namespace 'com.appware.cloudSpot'
 
@@ -59,7 +59,7 @@ android {
     defaultConfig {
         applicationId "com.appware.cloudSpot"
         minSdkVersion flutter.minSdkVersion
-        targetSdkVersion 36
+        targetSdkVersion 35
         multiDexEnabled true
         // viewBinding true
         versionCode flutterVersionCode.toInteger()
