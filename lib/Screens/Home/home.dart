@@ -5,21 +5,17 @@ import 'dart:async';
 import 'package:blackhole/CustomWidgets/gradient_containers.dart';
 import 'package:blackhole/CustomWidgets/miniplayer.dart';
 import 'package:blackhole/G-Ads.dart/ad_manager.dart';
-// import 'package:blackhole/G-Ads.dart/intersatail_ads.dart';
+import 'package:blackhole/G-Ads.dart/intersatail_ads.dart';
 // import 'package:blackhole/G-Ads.dart/intersatail_ads.dart';
 import 'package:blackhole/Screens/Home/home_screen.dart';
 import 'package:blackhole/Screens/Library/library.dart';
 import 'package:blackhole/Screens/LocalMusic/homeScreen_song.dart';
 import 'package:blackhole/Screens/Settings/new_settings_page.dart';
 import 'package:blackhole/Screens/YouTube/youtube_home.dart';
-import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
-// import 'package:blackhole/localization/app_localizations.dart';
-
-import 'package:blackhole/localization/app_localizations.dart';
-
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:persistent_bottom_nav_bar/persistent_bottom_nav_bar.dart';
 // import 'package:persistent_bottom_nav_bar/persistent_tab_view.dart';
@@ -52,10 +48,6 @@ class _HomePageState extends State<HomePage> {
     defaultValue: false,
   ) as bool;
 
-  // Add connectivity stream subscription
-  StreamSubscription<ConnectivityResult>? _connectivitySubscription;
-  bool _isConnected = false;
-
   void callback() {
     sectionsToShow = Hive.box('settings').get(
       'sectionsToShow',
@@ -74,41 +66,6 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
-  // Method to check internet connectivity
-  Future<void> _checkConnectivity() async {
-    final connectivityResult = await Connectivity().checkConnectivity();
-    _isConnected = connectivityResult != ConnectivityResult.none;
-
-    // Initialize AdManager only if connected to internet
-    if (_isConnected) {
-      AdManager().initialize();
-      print('Internet connected - AdManager initialized');
-    } else {
-      print('No internet connection - AdManager not initialized');
-    }
-  }
-
-  // Method to listen to connectivity changes
-  void _setupConnectivityListener() {
-    _connectivitySubscription = Connectivity()
-        .onConnectivityChanged
-        .listen((ConnectivityResult result) {
-      bool wasConnected = _isConnected;
-      _isConnected = result != ConnectivityResult.none;
-
-      // If connection was restored and AdManager wasn't initialized before
-      if (_isConnected && !wasConnected) {
-        AdManager().initialize();
-        print('Internet connection restored - AdManager initialized');
-      }
-      // If connection was lost, you might want to stop ad loading
-      else if (!_isConnected && wasConnected) {
-        print('Internet connection lost - AdManager stopped');
-        // Note: AdManager doesn't have a stop method, but you can handle this as needed
-      }
-    });
-  }
-
   void onItemTapped(int index) {
     _selectedIndex.value = index;
     _controller.jumpToTab(index);
@@ -116,11 +73,7 @@ class _HomePageState extends State<HomePage> {
 
   @override
   void initState() {
-    // Check connectivity first, then initialize AdManager if connected
-    _checkConnectivity();
-    _setupConnectivityListener();
-
-    // AdManager().initialize(); // Removed this line
+    AdManager().initialize();
     // AdManager.showInterstitialAd();
     _startAdTimer();
     super.initState();
@@ -133,7 +86,6 @@ class _HomePageState extends State<HomePage> {
     _controller.dispose();
     _timer?.cancel();
     _pageController.dispose();
-    _connectivitySubscription?.cancel(); // Cancel connectivity subscription
     super.dispose();
   }
 

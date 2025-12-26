@@ -11,14 +11,12 @@ import 'package:blackhole/Screens/Common/routes.dart';
 import 'package:blackhole/Screens/Player/audioplayer.dart';
 import 'package:blackhole/constants/constants.dart';
 import 'package:blackhole/constants/languagecodes.dart';
-import 'package:blackhole/localization/app_localizations.dart';
 import 'package:blackhole/providers/audio_service_provider.dart';
 import 'package:blackhole/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_displaymode/flutter_displaymode.dart';
-// import 'package:blackhole/localization/app_localizations.dart';
-
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:get_it/get_it.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';

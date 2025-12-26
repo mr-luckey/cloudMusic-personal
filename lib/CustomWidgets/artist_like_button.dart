@@ -1,11 +1,10 @@
 // Coded by Naseer Ahmed
 
 import 'package:blackhole/CustomWidgets/snackbar.dart';
-// import 'package:blackhole/G-Ads.dart/intersatail_ads.dart';
+import 'package:blackhole/G-Ads.dart/intersatail_ads.dart';
 // import 'package:blackhole/G-Ads.dart/intersatail_ads.dart';
 import 'package:flutter/material.dart';
-import 'package:blackhole/localization/app_localizations.dart';
-
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:hive/hive.dart';
 
 class ArtistLikeButton extends StatefulWidget {

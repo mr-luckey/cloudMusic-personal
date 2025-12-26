@@ -9,10 +9,7 @@ import 'package:blackhole/Screens/LocalMusic/downed_songs_desktop.dart';
 import 'package:blackhole/Screens/LocalMusic/local_song.dart';
 import 'package:blackhole/Screens/Top%20Charts/top.dart';
 import 'package:flutter/material.dart';
-// import 'package:blackhole/localization/app_localizations.dart';
-
-import 'package:blackhole/localization/app_localizations.dart';
-
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
 class LibraryPage extends StatefulWidget {

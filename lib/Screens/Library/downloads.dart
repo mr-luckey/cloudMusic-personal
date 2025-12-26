@@ -1,10 +1,9 @@
 // Coded by Naseer Ahmed
 
 import 'dart:io';
-// import 'dart:typed_data';
 
-// import 'package:audiotagger/audiotagger.dart';
-// import 'package:audiotagger/models/tag.dart';
+import 'package:audiotagger/audiotagger.dart';
+import 'package:audiotagger/models/tag.dart';
 import 'package:blackhole/CustomWidgets/custom_physics.dart';
 import 'package:blackhole/CustomWidgets/data_search.dart';
 import 'package:blackhole/CustomWidgets/empty_screen.dart';
@@ -19,14 +18,11 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
-// import 'package:blackhole/localization/app_localizations.dart';
-
-import 'package:blackhole/localization/app_localizations.dart';
-
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:hive/hive.dart';
 import 'package:logging/logging.dart';
 // import 'package:path_provider/path_provider.dart';
-// import 'package:permission_handler/permission_handler.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 class Downloads extends StatefulWidget {
   const Downloads({super.key});
@@ -540,7 +536,7 @@ Future<Map> editTags(Map song, BuildContext context) async {
   await showDialog(
     context: context,
     builder: (BuildContext context) {
-      // final tagger = Audiotagger();
+      final tagger = Audiotagger();
 
       FileImage songImage = FileImage(File(song['image'].toString()));
 
@@ -584,7 +580,23 @@ Future<Map> editTags(Map song, BuildContext context) async {
 
                       songImage = FileImage(File(imagePath));
 
-                      // Tag writing handled in MetadataGod flow elsewhere
+                      final Tag tag = Tag(
+                        artwork: imagePath,
+                      );
+                      try {
+                        await [
+                          Permission.manageExternalStorage,
+                        ].request();
+                        await tagger.writeTags(
+                          path: song['path'].toString(),
+                          tag: tag,
+                        );
+                      } catch (e) {
+                        await tagger.writeTags(
+                          path: song['path'].toString(),
+                          tag: tag,
+                        );
+                      }
                     }
                   },
                   child: Card(
@@ -757,11 +769,40 @@ Future<Map> editTags(Map song, BuildContext context) async {
               song['genre'] = genrecontroller.text;
               song['year'] = yearcontroller.text;
               song['path'] = pathcontroller.text;
-              // Tag editing functionality removed - audiotagger dependency removed
-              ShowSnackBar().showSnackBar(
-                context,
-                'Tag editing temporarily disabled',
+              final tag = Tag(
+                title: titlecontroller.text,
+                artist: artistcontroller.text,
+                album: albumcontroller.text,
+                genre: genrecontroller.text,
+                year: yearcontroller.text,
+                albumArtist: albumArtistController.text,
               );
+              try {
+                try {
+                  await [
+                    Permission.manageExternalStorage,
+                  ].request();
+                  tagger.writeTags(
+                    path: song['path'].toString(),
+                    tag: tag,
+                  );
+                } catch (e) {
+                  await tagger.writeTags(
+                    path: song['path'].toString(),
+                    tag: tag,
+                  );
+                  ShowSnackBar().showSnackBar(
+                    context,
+                    AppLocalizations.of(context)!.successTagEdit,
+                  );
+                }
+              } catch (e) {
+                Logger.root.severe('Failed to edit tags', e);
+                ShowSnackBar().showSnackBar(
+                  context,
+                  '${AppLocalizations.of(context)!.failedTagEdit}\nError: $e',
+                );
+              }
             },
             child: Text(
               AppLocalizations.of(context)!.ok,
@@ -808,11 +849,10 @@ class _DownSongsTabState extends State<DownSongsTab>
 
     try {
       await file.create();
-      // final image = await Audiotagger().readArtwork(path: songFilePath);
-      // Uint8List? image;
-      // if (image != null && image.isNotEmpty) {
-      //   file.writeAsBytesSync(image);
-      // }
+      final image = await Audiotagger().readArtwork(path: songFilePath);
+      if (image != null) {
+        file.writeAsBytesSync(image);
+      }
     } catch (e) {
       final HttpClientRequest request2 =
           await HttpClient().getUrl(Uri.parse(url));

@@ -1,18 +1,16 @@
 import 'dart:io';
 
-// import 'package:audiotagger/audiotagger.dart';
-// import 'package:audiotagger/models/tag.dart';
+import 'package:audiotagger/audiotagger.dart';
+import 'package:audiotagger/models/tag.dart';
 // import 'package:blackhole/CustomWidgets/snackbar.dart';
 import 'package:blackhole/Helpers/lyrics.dart';
 import 'package:blackhole/Services/ext_storage_provider.dart';
 import 'package:blackhole/Services/youtube_services.dart';
-import 'package:blackhole/localization/app_localizations.dart';
 // import 'package:ffmpeg_kit_flutter_audio/ffmpeg_kit.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 // import 'package:flutter_downloader/flutter_downloader.dart';
-// import 'package:blackhole/localization/app_localizations.dart';
-
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:hive/hive.dart';
 import 'package:http/http.dart';
 import 'package:logging/logging.dart';
@@ -432,30 +430,24 @@ class Download with ChangeNotifier {
         Logger.root.info('Getting audio tags');
         if (Platform.isAndroid) {
           try {
-            Logger.root.info('Started tag editing via MetadataGod (Android)');
-            await MetadataGod.writeMetadata(
-              file: filepath!,
-              metadata: Metadata(
-                title: data['title'].toString(),
-                artist: data['artist'].toString(),
-                albumArtist: data['album_artist']?.toString() ??
-                    data['artist']?.toString().split(', ')[0] ??
-                    '',
-                album: data['album'].toString(),
-                genre: data['language'].toString(),
-                year: ['', 'null'].contains(data['year'].toString())
-                    ? null
-                    : int.parse(data['year'].toString()),
-                durationMs: int.parse(data['duration'].toString()) * 1000,
-                fileSize: BigInt.from(file.lengthSync()),
-                picture: Picture(
-                  data: bytes2,
-                  mimeType: 'image/jpeg',
-                ),
-                // lyrics and comment not supported in MetadataGod
-                // lyrics: lyrics.isEmpty ? null : lyrics,
-                // comment: 'Cloud Spot',
-              ),
+            final Tag tag = Tag(
+              title: data['title'].toString(),
+              artist: data['artist'].toString(),
+              albumArtist: data['album_artist']?.toString() ??
+                  data['artist']?.toString().split(', ')[0] ??
+                  '',
+              artwork: filepath2,
+              album: data['album'].toString(),
+              genre: data['language'].toString(),
+              year: data['year'].toString(),
+              lyrics: lyrics,
+              comment: 'Cloud Spot',
+            );
+            Logger.root.info('Started tag editing');
+            final tagger = Audiotagger();
+            await tagger.writeTags(
+              path: filepath!,
+              tag: tag,
             );
           } catch (e) {
             Logger.root.severe('Error editing tags: $e');
@@ -479,7 +471,7 @@ class Download with ChangeNotifier {
                     ? null
                     : int.parse(data['year'].toString()),
                 durationMs: int.parse(data['duration'].toString()) * 1000,
-                fileSize: BigInt.from(file.lengthSync()),
+                fileSize: file.lengthSync(),
                 picture: Picture(
                   data: bytes2,
                   mimeType: 'image/jpeg',

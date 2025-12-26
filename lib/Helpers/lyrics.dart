@@ -2,8 +2,8 @@
 
 import 'dart:convert';
 
-// import 'package:audiotagger/audiotagger.dart';
-// import 'package:audiotagger/models/tag.dart';
+import 'package:audiotagger/audiotagger.dart';
+import 'package:audiotagger/models/tag.dart';
 import 'package:blackhole/APIs/spotify_api.dart';
 import 'package:blackhole/Helpers/matcher.dart';
 import 'package:blackhole/Helpers/spotify_helper.dart';
@@ -307,8 +307,9 @@ class Lyrics {
 
   static Future<String> getOffLyrics(String path) async {
     try {
-      // audiotagger removed - return empty for now
-      return '';
+      final Audiotagger tagger = Audiotagger();
+      final Tag? tags = await tagger.readTags(path: path);
+      return tags?.lyrics ?? '';
     } catch (e) {
       return '';
     }

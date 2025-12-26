@@ -24,17 +24,7 @@ class AdManager {
     'ca-app-pub-5561438827097019/5050562377',
     'ca-app-pub-5561438827097019/4504601615',
     'ca-app-pub-5561438827097019/6570084649',
-    'ca-app-pub-5561438827097019/3094708210',
-    'ca-app-pub-5561438827097019/6042081625',
-    'ca-app-pub-5561438827097019/6382537567',
-    'ca-app-pub-5561438827097019/3415918287',
-    'ca-app-pub-5561438827097019/5493903822',
-    'ca-app-pub-5561438827097019/3892105590',
-    'ca-app-pub-5561438827097019/2579023928',
-    'ca-app-pub-5561438827097019/4470690092',
-    'ca-app-pub-5561438827097019/8002740994',
-    'ca-app-pub-5561438827097019/7639778914',
-    'ca-app-pub-5561438827097019/5376577658',
+    'ca-app-pub-5561438827097019/3094708210'
     // Add your remaining ad IDs here
   ];
 
@@ -45,7 +35,7 @@ class AdManager {
 
   void _startAdTimer() {
     _adTimer?.cancel();
-    _adTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
+    _adTimer = Timer.periodic(const Duration(seconds: 10), (timer) {
       _checkAndLoadAd();
     });
   }
@@ -53,7 +43,7 @@ class AdManager {
   void _checkAndLoadAd() {
     if (_lastAdShownTime != null) {
       final timeSinceLastAd = DateTime.now().difference(_lastAdShownTime!);
-      if (timeSinceLastAd.inSeconds < 30) {
+      if (timeSinceLastAd.inSeconds < 60) {
         return; // Don't load new ad if less than 100 seconds have passed
       }
     }
