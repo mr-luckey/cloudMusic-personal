@@ -1,8 +1,7 @@
 import 'dart:async';
 import 'dart:io';
-// import 'package:blackhole/G-Ads.dart/ad_manager.dart';
+import 'package:blackhole/G-Ads.dart/ad_manager.dart';
 // import 'package:blackhole/G-Ads.dart/intersatail_ads.dart';
-import 'package:blackhole/Helpers/audio_query.dart';
 import 'package:blackhole/Helpers/config.dart';
 import 'package:blackhole/Helpers/handle_native.dart';
 import 'package:blackhole/Helpers/import_export_playlist.dart';
@@ -10,7 +9,6 @@ import 'package:blackhole/Helpers/logging.dart';
 import 'package:blackhole/Helpers/route_handler.dart';
 import 'package:blackhole/Screens/Common/routes.dart';
 import 'package:blackhole/Screens/Player/audioplayer.dart';
-import 'package:blackhole/Services/youtube_services.dart';
 import 'package:blackhole/constants/constants.dart';
 import 'package:blackhole/constants/languagecodes.dart';
 import 'package:blackhole/localization/app_localizations.dart';
@@ -22,13 +20,11 @@ import 'package:flutter_displaymode/flutter_displaymode.dart';
 // import 'package:blackhole/localization/app_localizations.dart';
 
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:get/get.dart';
 import 'package:get_it/get_it.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:logging/logging.dart';
 import 'package:metadata_god/metadata_god.dart';
-import 'package:on_audio_query/on_audio_query.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:receive_sharing_intent/receive_sharing_intent.dart';
 import 'package:sizer/sizer.dart' show SizerUtil;
@@ -57,15 +53,6 @@ Future<void> main() async {
   }
   await startService();
 
-  // Clear expired YouTube cache entries in background (non-blocking)
-  Future.microtask(() {
-    try {
-      YouTubeServices.instance.clearExpiredCache();
-    } catch (e) {
-      Logger.root.warning('Failed to clear expired cache on startup', e);
-    }
-  });
-
   runApp(MyApp());
 }
 
@@ -76,21 +63,6 @@ Future<void> setOptimalDisplayMode() async {
 Future<void> startService() async {
   await initializeLogging();
   MetadataGod.initialize();
-
-  // Initialize OnAudioQuery to prevent PluginProvider crash
-  // IMPORTANT: Use the static instance to ensure it's globally available
-  if (Platform.isAndroid || Platform.isIOS) {
-    try {
-      // Access the static instance to initialize it
-      final OnAudioQuery audioQuery = OfflineAudioQuery.audioQuery;
-      // Check permissions status to trigger initialization
-      await audioQuery.permissionsStatus();
-      Logger.root.info('OnAudioQuery initialized successfully');
-    } catch (e) {
-      Logger.root.warning('Failed to initialize OnAudioQuery', e);
-    }
-  }
-
   final audioHandlerHelper = AudioHandlerHelper();
   final AudioPlayerHandler audioHandler =
       await audioHandlerHelper.getAudioHandler();
@@ -119,14 +91,6 @@ Future<void> openHiveBox(String boxName, {bool limit = false}) async {
   }
 }
 
-class MyAppController extends GetxController {
-  final locale = const Locale('en', '').obs;
-
-  void setLocale(Locale value) {
-    locale.value = value;
-  }
-}
-
 class MyApp extends StatefulWidget {
   @override
   _MyAppState createState() => _MyAppState();
@@ -136,11 +100,10 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  final controller = Get.put(MyAppController());
+  Locale _locale = const Locale('en', '');
   late StreamSubscription _intentDataStreamSubscription;
   final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
   late ReceiveSharingIntent recint = ReceiveSharingIntent.instance;
-
   @override
   void dispose() {
     _intentDataStreamSubscription.cancel();
@@ -150,21 +113,16 @@ class _MyAppState extends State<MyApp> {
   @override
   void initState() {
     super.initState();
-
-    // Configure system UI once during initialization
-    _configureSystemUI();
-
     final String systemLangCode = Platform.localeName.substring(0, 2);
     final String? lang = Hive.box('settings').get('lang') as String?;
     if (lang == null &&
         LanguageCodes.languageCodes.values.contains(systemLangCode)) {
-      controller.locale.value = Locale(systemLangCode);
+      _locale = Locale(systemLangCode);
     } else {
-      controller.locale.value =
-          Locale(LanguageCodes.languageCodes[lang ?? 'English'] ?? 'en');
+      _locale = Locale(LanguageCodes.languageCodes[lang ?? 'English'] ?? 'en');
     }
     AppTheme.currentTheme.addListener(() {
-      controller.locale.refresh();
+      setState(() {});
     });
     if (Platform.isAndroid || Platform.isIOS) {
       _intentDataStreamSubscription = recint.getMediaStream().listen(
@@ -233,7 +191,14 @@ class _MyAppState extends State<MyApp> {
     }
   }
 
-  void _configureSystemUI() {
+  void setLocale(Locale value) {
+    setState(() {
+      _locale = value;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     SystemChrome.setPreferredOrientations([
       DeviceOrientation.portraitUp,
@@ -241,34 +206,26 @@ class _MyAppState extends State<MyApp> {
       DeviceOrientation.landscapeLeft,
       DeviceOrientation.landscapeRight,
     ]);
-  }
-
-  SystemUiOverlayStyle _getSystemUiOverlayStyle(BuildContext context) {
-    final Brightness brightness = AppTheme.themeMode == ThemeMode.system
-        ? MediaQuery.platformBrightnessOf(context)
-        : AppTheme.themeMode == ThemeMode.dark
-            ? Brightness.dark
-            : Brightness.light;
-
-    final Brightness iconBrightness =
-        brightness == Brightness.dark ? Brightness.light : Brightness.dark;
-
-    return SystemUiOverlayStyle(
-      statusBarColor: Colors.transparent,
-      systemNavigationBarColor: Colors.transparent,
-      statusBarIconBrightness: iconBrightness,
-      systemNavigationBarIconBrightness: iconBrightness,
-    );
-  }
-
-  void setLocale(Locale value) {
-    controller.setLocale(value);
-  }
-
-  @override
-  Widget build(BuildContext context) {
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: _getSystemUiOverlayStyle(context),
+      value: SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        systemNavigationBarColor: Colors.transparent,
+        statusBarIconBrightness: AppTheme.themeMode == ThemeMode.system
+            ? MediaQuery.platformBrightnessOf(context) == Brightness.dark
+                ? Brightness.light
+                : Brightness.dark
+            : AppTheme.themeMode == ThemeMode.dark
+                ? Brightness.light
+                : Brightness.dark,
+        systemNavigationBarIconBrightness:
+            AppTheme.themeMode == ThemeMode.system
+                ? MediaQuery.platformBrightnessOf(context) == Brightness.dark
+                    ? Brightness.light
+                    : Brightness.dark
+                : AppTheme.themeMode == ThemeMode.dark
+                    ? Brightness.light
+                    : Brightness.dark,
+      ),
       child: LayoutBuilder(
         builder: (context, constraints) {
           return OrientationBuilder(
@@ -285,7 +242,7 @@ class _MyAppState extends State<MyApp> {
                 darkTheme: AppTheme.darkTheme(
                   context: context,
                 ),
-                locale: controller.locale.value,
+                locale: _locale,
                 localizationsDelegates: const [
                   AppLocalizations.delegate,
                   GlobalMaterialLocalizations.delegate,

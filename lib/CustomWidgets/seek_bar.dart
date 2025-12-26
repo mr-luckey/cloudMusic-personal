@@ -6,22 +6,8 @@ import 'package:blackhole/Screens/Player/audioplayer.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:blackhole/localization/app_localizations.dart';
-import 'package:get/get.dart';
 
-class SeekBarController extends GetxController {
-  final dragValue = Rx<double?>(null);
-  final dragging = false.obs;
-
-  void updateDragValue(double? value) {
-    dragValue.value = value;
-  }
-
-  void setDragging(bool value) {
-    dragging.value = value;
-  }
-}
-
-class SeekBar extends StatelessWidget {
+class SeekBar extends StatefulWidget {
   final AudioPlayerHandler audioHandler;
   final Duration duration;
   final Duration position;
@@ -33,7 +19,6 @@ class SeekBar extends StatelessWidget {
   final ValueChanged<Duration>? onChangeEnd;
 
   const SeekBar({
-    super.key,
     required this.duration,
     required this.position,
     required this.offline,
@@ -46,12 +31,32 @@ class SeekBar extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
-    final controller = Get.put(SeekBarController(), tag: 'seekbar');
-    final sliderThemeData = SliderTheme.of(context).copyWith(
+  _SeekBarState createState() => _SeekBarState();
+}
+
+class _SeekBarState extends State<SeekBar> {
+  double? _dragValue;
+  bool _dragging = false;
+  late SliderThemeData _sliderThemeData;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    _sliderThemeData = SliderTheme.of(context).copyWith(
       trackHeight: 4.0,
     );
+  }
 
+  @override
+  Widget build(BuildContext context) {
+    final value = min(
+      _dragValue ?? widget.position.inMilliseconds.toDouble(),
+      widget.duration.inMilliseconds.toDouble(),
+    );
+    if (_dragValue != null && !_dragging) {
+      _dragValue = null;
+    }
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -61,7 +66,7 @@ class SeekBar extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                // if (offline)
+                // if (widget.offline)
                 //   Text(
                 //     'Offline',
                 //     style: TextStyle(
@@ -73,7 +78,7 @@ class SeekBar extends StatelessWidget {
                 // else
                 const SizedBox(),
                 StreamBuilder<double>(
-                  stream: audioHandler.speed,
+                  stream: widget.audioHandler.speed,
                   builder: (context, snapshot) {
                     final String speedValue =
                         '${snapshot.data?.toStringAsFixed(1) ?? 1.0}x';
@@ -94,7 +99,7 @@ class SeekBar extends StatelessWidget {
                           divisions: 25,
                           min: 0.5,
                           max: 3.0,
-                          audioHandler: audioHandler,
+                          audioHandler: widget.audioHandler,
                         );
                       },
                     );
@@ -116,7 +121,7 @@ class SeekBar extends StatelessWidget {
                     vertical: 6.0,
                   ),
                   child: SliderTheme(
-                    data: sliderThemeData.copyWith(
+                    data: _sliderThemeData.copyWith(
                       thumbShape: HiddenThumbComponentShape(),
                       overlayShape: SliderComponentShape.noThumb,
                       activeTrackColor:
@@ -128,56 +133,45 @@ class SeekBar extends StatelessWidget {
                     ),
                     child: ExcludeSemantics(
                       child: Slider(
-                        max: duration.inMilliseconds.toDouble(),
+                        max: widget.duration.inMilliseconds.toDouble(),
                         value: min(
-                          bufferedPosition.inMilliseconds.toDouble(),
-                          duration.inMilliseconds.toDouble(),
+                          widget.bufferedPosition.inMilliseconds.toDouble(),
+                          widget.duration.inMilliseconds.toDouble(),
                         ),
                         onChanged: (value) {},
                       ),
                     ),
                   ),
                 ),
-                Obx(
-                  () {
-                    final value = min(
-                      controller.dragValue.value ??
-                          position.inMilliseconds.toDouble(),
-                      duration.inMilliseconds.toDouble(),
-                    );
-                    if (controller.dragValue.value != null &&
-                        !controller.dragging.value) {
-                      controller.updateDragValue(null);
-                    }
-                    return SliderTheme(
-                      data: sliderThemeData.copyWith(
-                        inactiveTrackColor: Colors.transparent,
-                        activeTrackColor: Theme.of(context).iconTheme.color,
-                        thumbColor: Theme.of(context).iconTheme.color,
-                        thumbShape: const RoundSliderThumbShape(
-                          enabledThumbRadius: 8.0,
-                        ),
-                        overlayShape: SliderComponentShape.noThumb,
-                      ),
-                      child: Slider(
-                        max: duration.inMilliseconds.toDouble(),
-                        value: value,
-                        onChanged: (value) {
-                          if (!controller.dragging.value) {
-                            controller.setDragging(true);
-                          }
-                          controller.updateDragValue(value);
-                          onChanged
-                              ?.call(Duration(milliseconds: value.round()));
-                        },
-                        onChangeEnd: (value) {
-                          onChangeEnd
-                              ?.call(Duration(milliseconds: value.round()));
-                          controller.setDragging(false);
-                        },
-                      ),
-                    );
-                  },
+                SliderTheme(
+                  data: _sliderThemeData.copyWith(
+                    inactiveTrackColor: Colors.transparent,
+                    activeTrackColor: Theme.of(context).iconTheme.color,
+                    thumbColor: Theme.of(context).iconTheme.color,
+                    thumbShape: const RoundSliderThumbShape(
+                      enabledThumbRadius: 8.0,
+                    ),
+                    overlayShape: SliderComponentShape.noThumb,
+                  ),
+                  child: Slider(
+                    max: widget.duration.inMilliseconds.toDouble(),
+                    value: value,
+                    onChanged: (value) {
+                      if (!_dragging) {
+                        _dragging = true;
+                      }
+                      setState(() {
+                        _dragValue = value;
+                      });
+                      widget.onChanged
+                          ?.call(Duration(milliseconds: value.round()));
+                    },
+                    onChangeEnd: (value) {
+                      widget.onChangeEnd
+                          ?.call(Duration(milliseconds: value.round()));
+                      _dragging = false;
+                    },
+                  ),
                 ),
               ],
             ),
@@ -189,15 +183,15 @@ class SeekBar extends StatelessWidget {
               children: [
                 Text(
                   RegExp(r'((^0*[1-9]\d*:)?\d{2}:\d{2})\.\d+$')
-                          .firstMatch('$position')
+                          .firstMatch('$_position')
                           ?.group(1) ??
-                      '$position',
+                      '$_position',
                 ),
                 Text(
                   RegExp(r'((^0*[1-9]\d*:)?\d{2}:\d{2})\.\d+$')
-                          .firstMatch('$duration')
+                          .firstMatch('$_duration')
                           ?.group(1) ??
-                      '$duration',
+                      '$_duration',
                   // style: Theme.of(context).textTheme.caption!.copyWith(
                   //       color: Theme.of(context).iconTheme.color,
                   //     ),
@@ -209,6 +203,9 @@ class SeekBar extends StatelessWidget {
       ),
     );
   }
+
+  Duration get _duration => widget.duration;
+  Duration get _position => widget.position;
 }
 
 class HiddenThumbComponentShape extends SliderComponentShape {

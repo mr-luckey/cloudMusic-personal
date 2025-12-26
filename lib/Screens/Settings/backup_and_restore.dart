@@ -12,55 +12,26 @@ import 'package:blackhole/localization/app_localizations.dart';
 
 // import 'package:blackhole/localization/app_localizations.dart';
 
-import 'package:get/get.dart';
 import 'package:get_it/get_it.dart';
 import 'package:hive/hive.dart';
 
-class BackupAndRestorePageController extends GetxController {
-  final Box settingsBox = Hive.box('settings');
-  final MyTheme currentTheme = GetIt.I<MyTheme>();
-  final autoBackPath = ''.obs;
-
-  @override
-  void onInit() {
-    super.onInit();
-    autoBackPath.value = Hive.box('settings').get(
-      'autoBackPath',
-      defaultValue: '/storage/emulated/0/CloudSpot/Backups',
-    ) as String;
-  }
-
-  Future<void> resetAutoBackPath() async {
-    autoBackPath.value = await ExtStorageProvider.getExtStorage(
-          dirName: 'CloudSpot/Backups',
-          writeAccess: true,
-        ) ??
-        '/storage/emulated/0/CloudSpot/Backups';
-    Hive.box('settings').put('autoBackPath', autoBackPath.value);
-  }
-
-  Future<void> selectAutoBackPath(BuildContext context) async {
-    final String temp = await Picker.selectFolder(
-      context: context,
-      message: AppLocalizations.of(
-        context,
-      )!
-          .selectBackLocation,
-    );
-    if (temp.trim() != '') {
-      autoBackPath.value = temp;
-      Hive.box('settings').put('autoBackPath', temp);
-    }
-  }
-}
-
-class BackupAndRestorePage extends StatelessWidget {
+class BackupAndRestorePage extends StatefulWidget {
   const BackupAndRestorePage({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final controller = Get.put(BackupAndRestorePageController());
+  State<BackupAndRestorePage> createState() => _BackupAndRestorePageState();
+}
 
+class _BackupAndRestorePageState extends State<BackupAndRestorePage> {
+  final Box settingsBox = Hive.box('settings');
+  final MyTheme currentTheme = GetIt.I<MyTheme>();
+  String autoBackPath = Hive.box('settings').get(
+    'autoBackPath',
+    defaultValue: '/storage/emulated/0/CloudSpot/Backups',
+  ) as String;
+
+  @override
+  Widget build(BuildContext context) {
     return GradientContainer(
       child: Scaffold(
         backgroundColor: Colors.transparent,
@@ -112,7 +83,7 @@ class BackupAndRestorePage extends StatelessWidget {
                     ) as List;
                     if (!playlistNames.contains('Favorite Songs')) {
                       playlistNames.insert(0, 'Favorite Songs');
-                      controller.settingsBox.put(
+                      settingsBox.put(
                         'playlistNames',
                         playlistNames,
                       );
@@ -309,7 +280,7 @@ class BackupAndRestorePage extends StatelessWidget {
               dense: true,
               onTap: () async {
                 await restore(context);
-                controller.currentTheme.refresh();
+                currentTheme.refresh();
               },
             ),
             BoxSwitchTile(
@@ -328,46 +299,64 @@ class BackupAndRestorePage extends StatelessWidget {
               keyName: 'autoBackup',
               defaultValue: false,
             ),
-            Obx(
-              () => ListTile(
-                title: Text(
+            ListTile(
+              title: Text(
+                AppLocalizations.of(
+                  context,
+                )!
+                    .autoBackLocation,
+              ),
+              subtitle: Text(autoBackPath),
+              trailing: TextButton(
+                style: TextButton.styleFrom(
+                  foregroundColor:
+                      Theme.of(context).brightness == Brightness.dark
+                          ? Colors.white
+                          : Colors.grey[700],
+                ),
+                onPressed: () async {
+                  autoBackPath = await ExtStorageProvider.getExtStorage(
+                        dirName: 'CloudSpot/Backups',
+                        writeAccess: true,
+                      ) ??
+                      '/storage/emulated/0/CloudSpot/Backups';
+                  Hive.box('settings').put('autoBackPath', autoBackPath);
+                  setState(
+                    () {},
+                  );
+                },
+                child: Text(
                   AppLocalizations.of(
                     context,
                   )!
-                      .autoBackLocation,
+                      .reset,
                 ),
-                subtitle: Text(controller.autoBackPath.value),
-                trailing: TextButton(
-                  style: TextButton.styleFrom(
-                    foregroundColor:
-                        Theme.of(context).brightness == Brightness.dark
-                            ? Colors.white
-                            : Colors.grey[700],
-                  ),
-                  onPressed: () async {
-                    await controller.resetAutoBackPath();
-                  },
-                  child: Text(
+              ),
+              onTap: () async {
+                final String temp = await Picker.selectFolder(
+                  context: context,
+                  message: AppLocalizations.of(
+                    context,
+                  )!
+                      .selectBackLocation,
+                );
+                if (temp.trim() != '') {
+                  autoBackPath = temp;
+                  Hive.box('settings').put('autoBackPath', temp);
+                  setState(
+                    () {},
+                  );
+                } else {
+                  ShowSnackBar().showSnackBar(
+                    context,
                     AppLocalizations.of(
                       context,
                     )!
-                        .reset,
-                  ),
-                ),
-                onTap: () async {
-                  await controller.selectAutoBackPath(context);
-                  if (controller.autoBackPath.value.trim() == '') {
-                    ShowSnackBar().showSnackBar(
-                      context,
-                      AppLocalizations.of(
-                        context,
-                      )!
-                          .noFolderSelected,
-                    );
-                  }
-                },
-                dense: true,
-              ),
+                        .noFolderSelected,
+                  );
+                }
+              },
+              dense: true,
             ),
           ],
         ),

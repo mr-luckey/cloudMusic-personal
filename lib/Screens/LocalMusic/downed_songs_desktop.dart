@@ -1,4 +1,4 @@
-// import 'dart:io';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -13,109 +13,106 @@ import 'package:blackhole/Services/player_service.dart';
 
 import 'package:blackhole/localization/app_localizations.dart';
 
-import 'package:get/get.dart';
 import 'package:hive/hive.dart';
-// import 'package:logging/logging.dart';
+import 'package:logging/logging.dart';
 import 'package:path_provider/path_provider.dart';
 
-class DownloadedSongsDesktopController extends GetxController
-    with GetTickerProviderStateMixin {
+class DownloadedSongsDesktop extends StatefulWidget {
   final List<Map>? cachedSongs;
   final String? title;
   final int? playlistId;
-
-  DownloadedSongsDesktopController({
-    this.cachedSongs,
-    this.title,
-    this.playlistId,
-  });
-
-  final songs = <Map>[].obs;
-  final tempPath =
-      Rx<String?>(Hive.box('settings').get('tempDirPath')?.toString());
-  final albums = <String, List<Map>>{}.obs;
-  final artists = <String, List<Map>>{}.obs;
-  final genres = <String, List<Map>>{}.obs;
-  final sortedAlbumKeysList = <String>[].obs;
-  final sortedArtistKeysList = <String>[].obs;
-  final sortedGenreKeysList = <String>[].obs;
-  final added = false.obs;
-
-  late TabController tcontroller;
-  final OfflineAudioQuery offlineAudioQuery = OfflineAudioQuery();
-  final OnAudioQuery audioQuery = OnAudioQuery();
-
-  @override
-  void onInit() {
-    super.onInit();
-    tcontroller = TabController(length: 4, vsync: this);
-    requestPermission();
-  }
-
-  @override
-  void onClose() {
-    tcontroller.dispose();
-    super.onClose();
-  }
-
-  void requestPermission() async {
-    var status = await Permission.storage.request();
-    if (status.isGranted) {
-      getData();
-    }
-  }
-
-  Future<void> getData() async {
-    if (tempPath.value == null) {
-      tempPath.value = (await getTemporaryDirectory()).path;
-    }
-    if (cachedSongs == null) {
-      loadSongs();
-    } else {
-      songs.value = cachedSongs!;
-    }
-    added.value = true;
-  }
-
-  void loadSongs() async {
-    List<SongModel> songModels = await audioQuery.querySongs();
-    songs.value = songModels
-        .map((song) => {
-              'id': song.id.toString(),
-              'title': '',
-              'artist': '',
-              'album': '',
-              'image': '',
-              'year': '',
-              'path': '',
-            })
-        .toList();
-  }
-}
-
-class DownloadedSongsDesktop extends StatelessWidget {
-  final List<Map>? cachedSongs;
-  final String? title;
-  final int? playlistId;
-
   const DownloadedSongsDesktop({
     super.key,
     this.cachedSongs,
     this.title,
     this.playlistId,
   });
+  @override
+  _DownloadedSongsDesktopState createState() => _DownloadedSongsDesktopState();
+}
+
+class _DownloadedSongsDesktopState extends State<DownloadedSongsDesktop>
+    with TickerProviderStateMixin {
+  List<Map> _songs = [];
+  String? tempPath = Hive.box('settings').get('tempDirPath')?.toString();
+  final Map<String, List<Map>> _albums = {};
+  final Map<String, List<Map>> _artists = {};
+  final Map<String, List<Map>> _genres = {};
+  final List<String> _sortedAlbumKeysList = [];
+  final List<String> _sortedArtistKeysList = [];
+  final List<String> _sortedGenreKeysList = [];
+
+  bool added = false;
+  int sortValue = Hive.box('settings').get('sortValue', defaultValue: 1) as int;
+  int orderValue =
+      Hive.box('settings').get('orderValue', defaultValue: 1) as int;
+  int albumSortValue =
+      Hive.box('settings').get('albumSortValue', defaultValue: 2) as int;
+  List dirPaths =
+      Hive.box('settings').get('searchPaths', defaultValue: []) as List;
+  int minDuration =
+      Hive.box('settings').get('minDuration', defaultValue: 10) as int;
+  bool includeOrExclude =
+      Hive.box('settings').get('includeOrExclude', defaultValue: false) as bool;
+  List includedExcludedPaths = Hive.box('settings')
+      .get('includedExcludedPaths', defaultValue: []) as List;
+  TabController? _tcontroller;
+  OfflineAudioQuery offlineAudioQuery = OfflineAudioQuery();
+  List<Map> playlistDetails = [];
+  final OnAudioQuery _audioQuery = OnAudioQuery();
+
+  @override
+  void initState() {
+    _tcontroller = TabController(length: 4, vsync: this);
+    _requestPermission();
+    super.initState();
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+    _tcontroller!.dispose();
+  }
+
+  void _requestPermission() async {
+    var status = await Permission.storage.request();
+    if (status.isGranted) {
+      getData();
+    } else {
+      // Handle permission denied
+    }
+  }
+
+  Future<void> getData() async {
+    tempPath ??= (await getTemporaryDirectory()).path;
+    if (widget.cachedSongs == null) {
+      _loadSongs();
+    } else {
+      _songs = widget.cachedSongs!;
+    }
+    added = true;
+    setState(() {});
+  }
+
+  void _loadSongs() async {
+    List<SongModel> songs = await _audioQuery.querySongs();
+    setState(() {
+      _songs = songs
+          .map((song) => {
+                'id': song.id.toString(),
+                'title': '',
+                'artist': '',
+                'album': '',
+                'image': '',
+                'year': '',
+                'path': '',
+              })
+          .toList();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
-    final controller = Get.put(
-      DownloadedSongsDesktopController(
-        cachedSongs: cachedSongs,
-        title: title,
-        playlistId: playlistId,
-      ),
-      tag: DateTime.now().millisecondsSinceEpoch.toString(),
-    );
-
     return GradientContainer(
       child: DefaultTabController(
         length: 4,
@@ -123,10 +120,10 @@ class DownloadedSongsDesktop extends StatelessWidget {
           backgroundColor: Colors.transparent,
           appBar: AppBar(
             title: Text(
-              title ?? AppLocalizations.of(context)!.myMusic,
+              widget.title ?? AppLocalizations.of(context)!.myMusic,
             ),
             bottom: TabBar(
-              controller: controller.tcontroller,
+              controller: _tcontroller,
               indicatorSize: TabBarIndicatorSize.label,
               tabs: [
                 Tab(text: AppLocalizations.of(context)!.songs),
@@ -141,37 +138,35 @@ class DownloadedSongsDesktop extends StatelessWidget {
                 : Theme.of(context).colorScheme.secondary,
             elevation: 0,
           ),
-          body: Obx(
-            () => !controller.added.value
-                ? const Center(child: CircularProgressIndicator())
-                : TabBarView(
-                    physics: const CustomPhysics(),
-                    controller: controller.tcontroller,
-                    children: [
-                      SongsTab(
-                        songs: controller.songs,
-                        playlistId: playlistId,
-                        playlistName: title,
-                        tempPath: controller.tempPath.value!,
-                      ),
-                      AlbumsTabDesktop(
-                        albums: controller.albums,
-                        albumsList: controller.sortedAlbumKeysList,
-                        tempPath: controller.tempPath.value!,
-                      ),
-                      AlbumsTabDesktop(
-                        albums: controller.artists,
-                        albumsList: controller.sortedArtistKeysList,
-                        tempPath: controller.tempPath.value!,
-                      ),
-                      AlbumsTabDesktop(
-                        albums: controller.genres,
-                        albumsList: controller.sortedGenreKeysList,
-                        tempPath: controller.tempPath.value!,
-                      ),
-                    ],
-                  ),
-          ),
+          body: !added
+              ? const Center(child: CircularProgressIndicator())
+              : TabBarView(
+                  physics: const CustomPhysics(),
+                  controller: _tcontroller,
+                  children: [
+                    SongsTab(
+                      songs: _songs,
+                      playlistId: widget.playlistId,
+                      playlistName: widget.title,
+                      tempPath: tempPath!,
+                    ),
+                    AlbumsTabDesktop(
+                      albums: _albums,
+                      albumsList: _sortedAlbumKeysList,
+                      tempPath: tempPath!,
+                    ),
+                    AlbumsTabDesktop(
+                      albums: _artists,
+                      albumsList: _sortedArtistKeysList,
+                      tempPath: tempPath!,
+                    ),
+                    AlbumsTabDesktop(
+                      albums: _genres,
+                      albumsList: _sortedGenreKeysList,
+                      tempPath: tempPath!,
+                    ),
+                  ],
+                ),
         ),
       ),
     );

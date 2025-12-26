@@ -33,7 +33,7 @@ class AppTheme {
       ),
       visualDensity: VisualDensity.adaptivePlatformDensity,
       appBarTheme: const AppBarTheme(
-        backgroundColor: Color(0xfff5f9ff),
+        color: Color(0xfff5f9ff),
         foregroundColor: Colors.black,
         systemOverlayStyle: SystemUiOverlayStyle.dark,
       ),
@@ -46,6 +46,7 @@ class AppTheme {
       ),
       disabledColor: Colors.grey[600],
       brightness: Brightness.light,
+      indicatorColor: currentTheme.currentColor(),
       progressIndicatorTheme: const ProgressIndicatorThemeData()
           .copyWith(color: currentTheme.currentColor()),
       iconTheme: IconThemeData(
@@ -58,7 +59,6 @@ class AppTheme {
             brightness: Brightness.light,
             secondary: currentTheme.currentColor(),
           ),
-      tabBarTheme: TabBarThemeData(indicatorColor: currentTheme.currentColor()),
     );
   }
 
@@ -93,7 +93,7 @@ class AppTheme {
       visualDensity: VisualDensity.adaptivePlatformDensity,
       brightness: Brightness.dark,
       appBarTheme: AppBarTheme(
-        backgroundColor: currentTheme.getCanvasColor(),
+        color: currentTheme.getCanvasColor(),
         foregroundColor: Colors.white,
         systemOverlayStyle: SystemUiOverlayStyle.light,
       ),
@@ -106,6 +106,7 @@ class AppTheme {
           borderRadius: BorderRadius.circular(7.0),
         ),
       ),
+      dialogBackgroundColor: currentTheme.getCardColor(),
       progressIndicatorTheme: const ProgressIndicatorThemeData()
           .copyWith(color: currentTheme.currentColor()),
       iconTheme: const IconThemeData(
@@ -113,14 +114,12 @@ class AppTheme {
         opacity: 1.0,
         size: 24.0,
       ),
+      indicatorColor: currentTheme.currentColor(),
       colorScheme: Theme.of(context).colorScheme.copyWith(
             primary: Colors.white,
             secondary: currentTheme.currentColor(),
             brightness: Brightness.dark,
           ),
-      dialogTheme:
-          DialogThemeData(backgroundColor: currentTheme.getCardColor()),
-      tabBarTheme: TabBarThemeData(indicatorColor: currentTheme.currentColor()),
     );
   }
 }

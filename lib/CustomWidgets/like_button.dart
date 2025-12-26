@@ -7,108 +7,13 @@ import 'package:blackhole/Helpers/playlist.dart';
 import 'package:flutter/material.dart';
 import 'package:blackhole/localization/app_localizations.dart';
 
-import 'package:get/get.dart';
 import 'package:logging/logging.dart';
 
-class LikeButtonController extends GetxController
-    with GetSingleTickerProviderStateMixin {
-  final MediaItem? mediaItem;
-  final Map? data;
-
-  LikeButtonController({
-    this.mediaItem,
-    this.data,
-  });
-
-  final liked = false.obs;
-  late AnimationController animationController;
-  late Animation<double> scale;
-  late Animation<double> curve;
-
-  @override
-  void onInit() {
-    super.onInit();
-    // AdManager.showInterstitialAd();
-
-    animationController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 200),
-    );
-
-    curve =
-        CurvedAnimation(parent: animationController, curve: Curves.slowMiddle);
-
-    scale = TweenSequence<double>([
-      TweenSequenceItem(
-        tween: Tween<double>(begin: 1.0, end: 1.2),
-        weight: 50,
-      ),
-      TweenSequenceItem(
-        tween: Tween<double>(begin: 1.2, end: 1.0),
-        weight: 50,
-      ),
-    ]).animate(curve);
-
-    checkLiked();
-  }
-
-  @override
-  void onClose() {
-    animationController.dispose();
-    super.onClose();
-  }
-
-  void checkLiked() {
-    try {
-      if (mediaItem != null) {
-        liked.value = checkPlaylist('Favorite Songs', mediaItem!.id);
-      } else {
-        liked.value = checkPlaylist('Favorite Songs', data!['id'].toString());
-      }
-    } catch (e) {
-      Logger.root.severe('Error in likeButton: $e');
-    }
-  }
-
-  void toggleLike() {
-    liked.value
-        ? removeLiked(
-            mediaItem == null ? data!['id'].toString() : mediaItem!.id,
-          )
-        : mediaItem == null
-            ? addMapToPlaylist('Favorite Songs', data!)
-            : addItemToPlaylist('Favorite Songs', mediaItem!);
-
-    if (!liked.value) {
-      animationController.forward();
-    } else {
-      animationController.reverse();
-    }
-    liked.value = !liked.value;
-  }
-
-  void undoLike() {
-    liked.value
-        ? removeLiked(
-            mediaItem == null ? data!['id'].toString() : mediaItem!.id,
-          )
-        : mediaItem == null
-            ? addMapToPlaylist('Favorite Songs', data!)
-            : addItemToPlaylist(
-                'Favorite Songs',
-                mediaItem!,
-              );
-
-    liked.value = !liked.value;
-  }
-}
-
-class LikeButton extends StatelessWidget {
+class LikeButton extends StatefulWidget {
   final MediaItem? mediaItem;
   final double? size;
   final Map? data;
   final bool showSnack;
-
   const LikeButton({
     super.key,
     required this.mediaItem,
@@ -118,56 +23,122 @@ class LikeButton extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
-    final controller = Get.put(
-      LikeButtonController(
-        mediaItem: mediaItem,
-        data: data,
-      ),
-      tag: mediaItem?.id ?? data?['id'].toString(),
+  _LikeButtonState createState() => _LikeButtonState();
+}
+
+class _LikeButtonState extends State<LikeButton>
+    with SingleTickerProviderStateMixin {
+  bool liked = false;
+  late AnimationController _controller;
+  late Animation<double> _scale;
+  late Animation<double> _curve;
+
+  @override
+  void initState() {
+    // AdManager.showInterstitialAd();
+    super.initState();
+
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 200),
     );
 
-    return Obx(
-      () => ScaleTransition(
-        scale: controller.scale,
-        child: IconButton(
-          icon: Icon(
-            controller.liked.value
-                ? Icons.favorite_rounded
-                : Icons.favorite_border_rounded,
-            color: controller.liked.value
-                ? Colors.redAccent
-                : Theme.of(context).iconTheme.color,
-          ),
-          iconSize: size ?? 24.0,
-          tooltip: controller.liked.value
-              ? AppLocalizations.of(context)!.unlike
-              : AppLocalizations.of(context)!.like,
-          onPressed: () async {
-            // AdManager.showInterstitialAd();
+    _curve = CurvedAnimation(parent: _controller, curve: Curves.slowMiddle);
 
-            controller.toggleLike();
+    _scale = TweenSequence(<TweenSequenceItem<double>>[
+      TweenSequenceItem(
+        tween: Tween<double>(begin: 1.0, end: 1.2),
+        weight: 50,
+      ),
+      TweenSequenceItem(
+        tween: Tween<double>(begin: 1.2, end: 1.0),
+        weight: 50,
+      ),
+    ]).animate(_curve);
+  }
 
-            if (showSnack) {
-              ShowSnackBar().showSnackBar(
-                context,
-                controller.liked.value
-                    ? AppLocalizations.of(context)!.addedToFav
-                    : AppLocalizations.of(context)!.removedFromFav,
-                action: SnackBarAction(
-                  textColor: Theme.of(context).colorScheme.secondary,
-                  label: AppLocalizations.of(context)!.undo,
-                  onPressed: () {
-                    // AdManager.showInterstitialAd();
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
 
-                    // InterstitialAdWidget();
-                    controller.undoLike();
-                  },
-                ),
-              );
-            }
-          },
+  @override
+  Widget build(BuildContext context) {
+    try {
+      if (widget.mediaItem != null) {
+        liked = checkPlaylist('Favorite Songs', widget.mediaItem!.id);
+      } else {
+        liked = checkPlaylist('Favorite Songs', widget.data!['id'].toString());
+      }
+    } catch (e) {
+      Logger.root.severe('Error in likeButton: $e');
+    }
+    return ScaleTransition(
+      scale: _scale,
+      child: IconButton(
+        icon: Icon(
+          liked ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+          color: liked ? Colors.redAccent : Theme.of(context).iconTheme.color,
         ),
+        iconSize: widget.size ?? 24.0,
+        tooltip: liked
+            ? AppLocalizations.of(context)!.unlike
+            : AppLocalizations.of(context)!.like,
+        onPressed: () async {
+          // AdManager.showInterstitialAd();
+
+          liked
+              ? removeLiked(
+                  widget.mediaItem == null
+                      ? widget.data!['id'].toString()
+                      : widget.mediaItem!.id,
+                )
+              : widget.mediaItem == null
+                  ? addMapToPlaylist('Favorite Songs', widget.data!)
+                  : addItemToPlaylist('Favorite Songs', widget.mediaItem!);
+
+          if (!liked) {
+            _controller.forward();
+          } else {
+            _controller.reverse();
+          }
+          setState(() {
+            liked = !liked;
+          });
+          if (widget.showSnack) {
+            ShowSnackBar().showSnackBar(
+              context,
+              liked
+                  ? AppLocalizations.of(context)!.addedToFav
+                  : AppLocalizations.of(context)!.removedFromFav,
+              action: SnackBarAction(
+                textColor: Theme.of(context).colorScheme.secondary,
+                label: AppLocalizations.of(context)!.undo,
+                onPressed: () {
+                  // AdManager.showInterstitialAd();
+
+                  // InterstitialAdWidget();
+                  liked
+                      ? removeLiked(
+                          widget.mediaItem == null
+                              ? widget.data!['id'].toString()
+                              : widget.mediaItem!.id,
+                        )
+                      : widget.mediaItem == null
+                          ? addMapToPlaylist('Favorite Songs', widget.data!)
+                          : addItemToPlaylist(
+                              'Favorite Songs',
+                              widget.mediaItem!,
+                            );
+
+                  liked = !liked;
+                  setState(() {});
+                },
+              ),
+            );
+          }
+        },
       ),
     );
   }

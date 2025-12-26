@@ -10,7 +10,6 @@ import 'package:blackhole/Helpers/playlist.dart';
 import 'package:blackhole/Screens/Player/audioplayer.dart';
 import 'package:blackhole/Services/isolate_service.dart';
 import 'package:blackhole/Services/yt_music.dart';
-import 'package:blackhole/Services/youtube_services.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/services.dart';
 import 'package:hive/hive.dart';
@@ -28,10 +27,6 @@ class AudioPlayerHandlerImpl extends BaseAudioHandler
   bool loadStart = true;
   bool useDown = true;
   AndroidEqualizerParameters? _equalizerParams;
-  // When true we are bulk-building sources for a whole queue; avoid
-  // heavy network work (like refreshing YouTube URLs) here so playback
-  // can start quickly and other items are prepared lazily.
-  bool _isBuildingSources = false;
 
   late AudioPlayer? _player;
   late String connectionType = 'mobile';
@@ -298,8 +293,7 @@ class AudioPlayerHandlerImpl extends BaseAudioHandler
               return null;
             });
           } else {
-            final sources = await _itemsToSources(lastQueue);
-            await _playlist.addAll(sources);
+            await _playlist.addAll(_itemsToSources(lastQueue));
             try {
               await _player!
                   .setAudioSource(
@@ -376,279 +370,136 @@ class AudioPlayerHandlerImpl extends BaseAudioHandler
     addQueueItem(newItem);
   }
 
-  Future<AudioSource?> _itemToSource(MediaItem mediaItem) async {
+  AudioSource? _itemToSource(MediaItem mediaItem) {
     AudioSource? audioSource;
     try {
-
       if (mediaItem.artUri.toString().startsWith('file:')) {
-        try {
-          final urlStr = mediaItem.extras?['url']?.toString();
-          if (urlStr == null || urlStr.isEmpty) {
-            Logger.root.warning(
-              'Local file ${mediaItem.id} has no URL path',
-            );
-            return null;
-          }
-          audioSource = AudioSource.uri(Uri.file(urlStr));
-        } catch (e, stackTrace) {
-          Logger.root.severe(
-            'Error creating audio source for local file ${mediaItem.id}',
-            e,
-            stackTrace,
-          );
-          return null;
-        }
+        audioSource =
+            AudioSource.uri(Uri.file(mediaItem.extras!['url'].toString()));
       } else {
         if (downloadsBox != null &&
             downloadsBox!.containsKey(mediaItem.id) &&
             useDown) {
           Logger.root.info('Found ${mediaItem.id} in downloads');
-          try {
-            final downloadData = downloadsBox!.get(mediaItem.id);
-            if (downloadData is Map) {
-              final path = downloadData['path']?.toString();
-              if (path != null && path.isNotEmpty) {
-                audioSource = AudioSource.uri(
-                  Uri.file(path),
-                  tag: mediaItem.id,
-                );
-              } else {
-                Logger.root.warning(
-                  'Download entry for ${mediaItem.id} has no valid path',
-                );
-                // Fall through to online source
-              }
-            } else {
-              Logger.root.warning(
-                'Download entry for ${mediaItem.id} is not a Map',
-              );
-              // Fall through to online source
-            }
-          } catch (e, stackTrace) {
-            Logger.root.warning(
-              'Error accessing download entry for ${mediaItem.id}',
-              e,
-              stackTrace,
-            );
-            // Fall through to online source
-          }
-        }
-
-        if (audioSource == null) {
+          audioSource = AudioSource.uri(
+            Uri.file(
+              (downloadsBox!.get(mediaItem.id) as Map)['path'].toString(),
+            ),
+            tag: mediaItem.id,
+          );
+        } else {
           if (mediaItem.genre == 'YouTube') {
-            try {
-              final String urlString =
-                  mediaItem.extras?['url']?.toString() ?? '';
-
-              // When building a whole queue, never block on network for
-              // YouTube items. We only create sources if we already have
-              // a URL; otherwise we skip them and they can be added later
-              // on demand (e.g. when user plays them explicitly or via
-              // background recommendation job).
-              if (_isBuildingSources) {
-                if (urlString.isEmpty) {
-                  return null;
-                }
-                try {
-                  audioSource = AudioSource.uri(Uri.parse(urlString));
-                } catch (e) {
-                  Logger.root.warning(
-                    'Invalid YouTube URL format for ${mediaItem.id}: $e',
-                  );
-                  return null;
-                }
-              } else {
-                int expiredAt = 0;
-                try {
-                  final expireAtStr =
-                      (mediaItem.extras?['expire_at'] ?? '0').toString();
-                  expiredAt = int.parse(expireAtStr);
-                } catch (e) {
-                  expiredAt = 0;
-                }
-
-                final int currentTime =
-                    DateTime.now().millisecondsSinceEpoch ~/ 1000;
-
-
-                // If we don't have a URL yet or it is expired/expiring soon,
-                // refresh it synchronously for THIS item only.
-                if (urlString.isEmpty || currentTime + 350 > expiredAt) {
-
-                  Map? newData;
-                  int retryCount = 0;
-                  const maxRetries = 1;
-
-                  while (retryCount <= maxRetries) {
-                    try {
-                      if (retryCount > 0) {
-                        await Future.delayed(
-                          Duration(milliseconds: 500 * retryCount),
-                        );
-                      }
-
-                      newData = await YouTubeServices.instance
-                          .refreshLink(
-                        mediaItem.id,
-                        useYTM: true,
-                      )
-                          .timeout(
-                        const Duration(seconds: 30),
-                        onTimeout: () {
-                          return null;
-                        },
-                      );
-
-                      if (newData != null &&
-                          newData['url'] != null &&
-                          newData['url'].toString().isNotEmpty) {
-                        break;
-                      } else {
-                        if (retryCount >= maxRetries) {
-                          Logger.root.severe(
-                            'Failed to refresh YouTube link for ${mediaItem.title} after retries',
-                          );
-                          return null;
-                        }
-                      }
-                    } catch (e, stackTrace) {
-                      Logger.root.warning(
-                        'Error in refreshLink retry for ${mediaItem.id}',
-                        e,
-                        stackTrace,
-                      );
-                      if (retryCount >= maxRetries) {
-                        Logger.root.severe(
-                          'Error refreshing YouTube link for ${mediaItem.title} after retries',
-                          e,
-                          stackTrace,
-                        );
-                        return null;
-                      }
+            final int expiredAt =
+                int.parse((mediaItem.extras!['expire_at'] ?? '0').toString());
+            if ((DateTime.now().millisecondsSinceEpoch ~/ 1000) + 350 >
+                expiredAt) {
+              // Logger.root.info(
+              //   'player | youtube link expired for ${mediaItem.title}, searching cache',
+              // );
+              if (Hive.box('ytlinkcache').containsKey(mediaItem.id)) {
+                final cachedData = Hive.box('ytlinkcache').get(mediaItem.id);
+                if (cachedData is List) {
+                  int minExpiredAt = 0;
+                  for (final e in cachedData) {
+                    final int cachedExpiredAt =
+                        int.parse(e['expireAt'].toString());
+                    if (minExpiredAt == 0 || cachedExpiredAt < minExpiredAt) {
+                      minExpiredAt = cachedExpiredAt;
                     }
-                    retryCount++;
                   }
 
-                  if (newData != null &&
-                      newData['url'] != null &&
-                      newData['url'].toString().isNotEmpty) {
-                    // Use fresh URL directly; do not try to reassign the
-                    // final `extras` field of MediaItem (we only update
-                    // the cache and use the URL locally here).
-                    final freshUrl = newData['url'].toString();
-
-                    // Update cache if URLs data is available
-                    try {
-                      final List<Map>? urlsData =
-                          newData['urlsData'] as List<Map>?;
-                      if (urlsData != null && urlsData.isNotEmpty) {
-                        try {
-                          if (Hive.isBoxOpen('ytlinkcache')) {
-                            await Hive.box('ytlinkcache')
-                                .put(mediaItem.id, urlsData);
-                          } else {
-                          }
-                        } catch (e) {
-                          Logger.root.warning(
-                            'Failed to update cache for ${mediaItem.id}',
-                            e,
-                          );
-                        }
-                      }
-                    } catch (e) {
-                    }
-
-                    try {
-                      audioSource = AudioSource.uri(Uri.parse(freshUrl));
-                    } catch (e) {
-                      Logger.root.severe(
-                        'Invalid YouTube URL format after refresh for ${mediaItem.id}: $e',
-                      );
-                      return null;
+                  if ((DateTime.now().millisecondsSinceEpoch ~/ 1000) + 350 >
+                      minExpiredAt) {
+                    Logger.root.info(
+                      'youtube link expired for ${mediaItem.title}, refreshing',
+                    );
+                    refreshLinks.add(mediaItem.id);
+                    if (!jobRunning) {
+                      refreshJob();
                     }
                   } else {
-                    return null;
+                    Logger.root.info(
+                      'youtube link found in cache for ${mediaItem.title}',
+                    );
+                    if (cacheSong) {
+                      // Change this to handle yt quality
+                      audioSource = LockCachingAudioSource(
+                        Uri.parse(cachedData.last['url'].toString()),
+                      );
+                    } else {
+                      // Change this to handle yt quality
+                      audioSource = AudioSource.uri(
+                        Uri.parse(cachedData.last['url'].toString()),
+                      );
+                    }
+                    mediaItem.extras!['url'] = cachedData.last['url'];
+                    _mediaItemExpando[audioSource] = mediaItem;
+                    return audioSource;
                   }
                 } else {
-                  if (urlString.isEmpty) {
-                    return null;
-                  }
-                  try {
-                    audioSource = AudioSource.uri(Uri.parse(urlString));
-                  } catch (e) {
-                    Logger.root.severe(
-                      'Invalid YouTube URL format for ${mediaItem.id}: $e',
-                    );
-                    return null;
+                  Logger.root.info(
+                    'old youtube link cache found for ${mediaItem.title}, refreshing',
+                  );
+                  refreshLinks.add(mediaItem.id);
+                  if (!jobRunning) {
+                    refreshJob();
                   }
                 }
-              }
-
-              // At this point `audioSource` should not be null for YouTube items.
-              if (audioSource != null) {
-                _mediaItemExpando[audioSource] = mediaItem;
-                return audioSource;
               } else {
-                return null;
+                Logger.root.info(
+                  'youtube link not found in cache for ${mediaItem.title}, refreshing',
+                );
+                refreshLinks.add(mediaItem.id);
+                if (!jobRunning) {
+                  refreshJob();
+                }
               }
-            } catch (e, stackTrace) {
-              Logger.root.severe(
-                'Critical error creating YouTube audio source for ${mediaItem.id}',
-                e,
-                stackTrace,
-              );
-              return null;
+            } else {
+              if (cacheSong) {
+                audioSource = LockCachingAudioSource(
+                  Uri.parse(mediaItem.extras!['url'].toString()),
+                );
+              } else {
+                audioSource = AudioSource.uri(
+                  Uri.parse(mediaItem.extras!['url'].toString()),
+                );
+              }
+              _mediaItemExpando[audioSource] = mediaItem;
+              return audioSource;
             }
           } else {
-            try {
-              // Always use progressive streaming for non-YouTube songs as well.
-              // This starts playback quickly (after a small buffer) and continues
-              // loading in the background, similar to YouTube's behavior.
-              //
-              // We intentionally avoid full-file disk caching here because that
-              // can delay the start of playback on long songs/videos.
-              final urlStr = mediaItem.extras?['url']?.toString();
-              if (urlStr == null || urlStr.isEmpty) {
-                Logger.root.warning(
-                  'Non-YouTube song ${mediaItem.id} has no URL',
-                );
-                return null;
-              }
-
-              final uri = Uri.parse(
-                urlStr.replaceAll(
-                  '_96.',
-                  "_${preferredQuality.replaceAll(' kbps', '')}.",
+            if (cacheSong) {
+              audioSource = LockCachingAudioSource(
+                Uri.parse(
+                  mediaItem.extras!['url'].toString().replaceAll(
+                        '_96.',
+                        "_${preferredQuality.replaceAll(' kbps', '')}.",
+                      ),
                 ),
               );
-              audioSource = AudioSource.uri(uri);
-            } catch (e, stackTrace) {
-              Logger.root.severe(
-                'Error creating audio source for non-YouTube song ${mediaItem.id}',
-                e,
-                stackTrace,
+            } else {
+              audioSource = AudioSource.uri(
+                Uri.parse(
+                  mediaItem.extras!['url'].toString().replaceAll(
+                        '_96.',
+                        "_${preferredQuality.replaceAll(' kbps', '')}.",
+                      ),
+                ),
               );
-              return null;
             }
           }
         }
       }
-    } catch (e, stackTrace) {
-      Logger.root.severe(
-          'Error while creating audiosource for ${mediaItem.title}',
-          e,
-          stackTrace);
+    } catch (e) {
+      Logger.root.severe('Error while creating audiosource', e);
     }
-
     if (audioSource != null) {
       _mediaItemExpando[audioSource] = mediaItem;
-    } else {
     }
-
     return audioSource;
   }
 
-  Future<List<AudioSource>> _itemsToSources(List<MediaItem> mediaItems) async {
+  List<AudioSource> _itemsToSources(List<MediaItem> mediaItems) {
     preferredMobileQuality = Hive.box('settings')
         .get('streamingQuality', defaultValue: '96 kbps')
         .toString();
@@ -661,32 +512,7 @@ class AudioPlayerHandlerImpl extends BaseAudioHandler
     cacheSong =
         Hive.box('settings').get('cacheSong', defaultValue: false) as bool;
     useDown = Hive.box('settings').get('useDown', defaultValue: true) as bool;
-
-    final List<AudioSource> sources = [];
-    _isBuildingSources = true;
-    try {
-      for (int i = 0; i < mediaItems.length; i++) {
-        try {
-          final source = await _itemToSource(mediaItems[i]);
-          if (source != null) {
-            sources.add(source);
-          } else {
-            Logger.root.warning(
-              'Failed to create audio source for ${mediaItems[i].title}',
-            );
-          }
-        } catch (e) {
-          Logger.root.severe(
-            'Error creating audio source for ${mediaItems[i].title}',
-            e,
-          );
-        }
-      }
-    } finally {
-      _isBuildingSources = false;
-    }
-
-    return sources;
+    return mediaItems.map(_itemToSource).whereType<AudioSource>().toList();
   }
 
   @override
@@ -832,7 +658,7 @@ class AudioPlayerHandlerImpl extends BaseAudioHandler
 
   @override
   Future<void> addQueueItem(MediaItem mediaItem) async {
-    final res = await _itemToSource(mediaItem);
+    final res = _itemToSource(mediaItem);
     if (res != null) {
       await _playlist.add(res);
     }
@@ -840,13 +666,12 @@ class AudioPlayerHandlerImpl extends BaseAudioHandler
 
   @override
   Future<void> addQueueItems(List<MediaItem> mediaItems) async {
-    final sources = await _itemsToSources(mediaItems);
-    await _playlist.addAll(sources);
+    await _playlist.addAll(_itemsToSources(mediaItems));
   }
 
   @override
   Future<void> insertQueueItem(int index, MediaItem mediaItem) async {
-    final res = await _itemToSource(mediaItem);
+    final res = _itemToSource(mediaItem);
     if (res != null) {
       await _playlist.insert(index, res);
     }
@@ -855,8 +680,7 @@ class AudioPlayerHandlerImpl extends BaseAudioHandler
   @override
   Future<void> updateQueue(List<MediaItem> newQueue) async {
     await _playlist.clear();
-    final sources = await _itemsToSources(newQueue);
-    await _playlist.addAll(sources);
+    await _playlist.addAll(_itemsToSources(newQueue));
     addLastQueue(newQueue);
     // stationId = '';
     // stationNames = newQueue.map((e) => e.id).toList();

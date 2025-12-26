@@ -14,26 +14,15 @@ class GradientContainer extends StatefulWidget {
 
 class _GradientContainerState extends State<GradientContainer> {
   MyTheme currentTheme = GetIt.I<MyTheme>();
-  BoxDecoration? _cachedDecoration;
-  Brightness? _lastBrightness;
-
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    _updateDecoration();
-  }
-
-  void _updateDecoration() {
-    final brightness = Theme.of(context).brightness;
-
-    // Only rebuild decoration if brightness changed
-    if (_lastBrightness != brightness) {
-      _lastBrightness = brightness;
-      _cachedDecoration = BoxDecoration(
+  Widget build(BuildContext context) {
+    // ignore: use_decorated_box
+    return Container(
+      decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: brightness == Brightness.dark
+          colors: Theme.of(context).brightness == Brightness.dark
               ? ((widget.opacity == true)
                   ? currentTheme.getTransBackGradient()
                   : currentTheme.getBackGradient())
@@ -42,18 +31,8 @@ class _GradientContainerState extends State<GradientContainer> {
                   Colors.white,
                 ],
         ),
-      );
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    // Use RepaintBoundary to isolate gradient repaints
-    return RepaintBoundary(
-      child: Container(
-        decoration: _cachedDecoration,
-        child: widget.child,
       ),
+      child: widget.child,
     );
   }
 }
@@ -76,46 +55,26 @@ class BottomGradientContainer extends StatefulWidget {
 
 class _BottomGradientContainerState extends State<BottomGradientContainer> {
   MyTheme currentTheme = GetIt.I<MyTheme>();
-  BoxDecoration? _cachedDecoration;
-  Brightness? _lastBrightness;
-
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    _updateDecoration();
-  }
-
-  void _updateDecoration() {
-    final brightness = Theme.of(context).brightness;
-
-    if (_lastBrightness != brightness) {
-      _lastBrightness = brightness;
-      _cachedDecoration = BoxDecoration(
+  Widget build(BuildContext context) {
+    return Container(
+      margin: widget.margin ?? const EdgeInsets.fromLTRB(25, 0, 25, 25),
+      padding: widget.padding ?? const EdgeInsets.fromLTRB(10, 15, 10, 15),
+      decoration: BoxDecoration(
         borderRadius: widget.borderRadius ??
             const BorderRadius.all(Radius.circular(15.0)),
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: brightness == Brightness.dark
+          colors: Theme.of(context).brightness == Brightness.dark
               ? currentTheme.getBottomGradient()
               : [
                   Colors.white,
                   Theme.of(context).canvasColor,
                 ],
         ),
-      );
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return RepaintBoundary(
-      child: Container(
-        margin: widget.margin ?? const EdgeInsets.fromLTRB(25, 0, 25, 25),
-        padding: widget.padding ?? const EdgeInsets.fromLTRB(10, 15, 10, 15),
-        decoration: _cachedDecoration,
-        child: widget.child,
       ),
+      child: widget.child,
     );
   }
 }
@@ -145,57 +104,37 @@ class GradientCard extends StatefulWidget {
 
 class _GradientCardState extends State<GradientCard> {
   MyTheme currentTheme = GetIt.I<MyTheme>();
-  BoxDecoration? _cachedDecoration;
-  Brightness? _lastBrightness;
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    _updateDecoration();
-  }
-
-  void _updateDecoration() {
-    final brightness = Theme.of(context).brightness;
-
-    if (_lastBrightness != brightness) {
-      _lastBrightness = brightness;
-      _cachedDecoration = BoxDecoration(
-        gradient: LinearGradient(
-          begin: widget.gradientBegin ?? Alignment.topLeft,
-          end: widget.gradientEnd ?? Alignment.bottomRight,
-          colors: widget.gradientColors ??
-              (brightness == Brightness.dark
-                  ? currentTheme.getCardGradient()
-                  : [
-                      Colors.white,
-                      Theme.of(context).canvasColor,
-                    ]),
-        ),
-      );
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
-    return RepaintBoundary(
-      child: Card(
-        elevation: widget.elevation ?? 3,
-        shape: RoundedRectangleBorder(
-          borderRadius: widget.radius ?? BorderRadius.circular(10.0),
-        ),
-        clipBehavior: Clip.antiAlias,
-        margin: widget.margin ?? EdgeInsets.zero,
-        color: Colors.transparent,
-        child: widget.elevation == 0
-            ? widget.child
-            : DecoratedBox(
-                decoration: _cachedDecoration!,
-                child: Padding(
-                  padding: widget.padding ?? EdgeInsets.zero,
-                  child: widget.child,
+    return Card(
+      elevation: widget.elevation ?? 3,
+      shape: RoundedRectangleBorder(
+        borderRadius: widget.radius ?? BorderRadius.circular(10.0),
+      ),
+      clipBehavior: Clip.antiAlias,
+      margin: widget.margin ?? EdgeInsets.zero,
+      color: Colors.transparent,
+      child: widget.elevation == 0
+          ? widget.child
+          : DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: widget.gradientBegin ?? Alignment.topLeft,
+                  end: widget.gradientEnd ?? Alignment.bottomRight,
+                  colors: widget.gradientColors ??
+                      (Theme.of(context).brightness == Brightness.dark
+                          ? currentTheme.getCardGradient()
+                          : [
+                              Colors.white,
+                              Theme.of(context).canvasColor,
+                            ]),
                 ),
               ),
-      ),
+              child: Padding(
+                padding: widget.padding ?? EdgeInsets.zero,
+                child: widget.child,
+              ),
+            ),
     );
   }
 }

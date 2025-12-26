@@ -5,29 +5,32 @@ import 'package:flutter/material.dart';
 
 import 'package:blackhole/localization/app_localizations.dart';
 
-import 'package:get/get.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-class AboutScreenController extends GetxController {
-  final appVersion = Rxn<String>();
-
+class AboutScreen extends StatefulWidget {
   @override
-  void onInit() {
-    super.onInit();
-    getAppVersion();
-  }
-
-  Future<void> getAppVersion() async {
-    final PackageInfo packageInfo = await PackageInfo.fromPlatform();
-    appVersion.value = packageInfo.version;
-  }
+  _AboutScreenState createState() => _AboutScreenState();
 }
 
-class AboutScreen extends StatelessWidget {
+class _AboutScreenState extends State<AboutScreen> {
+  String? appVersion;
+
+  @override
+  void initState() {
+    main();
+    super.initState();
+  }
+
+  Future<void> main() async {
+    final PackageInfo packageInfo = await PackageInfo.fromPlatform();
+    setState(() {
+      appVersion = packageInfo.version;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
-    final controller = Get.put(AboutScreenController());
     final double separationHeight = MediaQuery.sizeOf(context).height * 0.035;
 
     ///TODO: Need to make the about screen
@@ -97,7 +100,7 @@ class AboutScreen extends StatelessWidget {
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      Obx(() => Text('v${controller.appVersion.value ?? ''}')),
+                      Text('v$appVersion'),
                     ],
                   ),
                   SizedBox(
