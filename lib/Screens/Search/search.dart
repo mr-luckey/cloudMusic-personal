@@ -62,17 +62,12 @@ class SearchPageController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    print('[CONTROLLER] 🎬 SearchPageController initialized');
-    print('[CONTROLLER] 📥 Initial query: "$initialQuery"');
     controller.text = initialQuery;
     // Make sure reactive query matches the initial text so that all
     // subsequent searches / refreshes use the latest query value.
     query.value = initialQuery;
-    print(
-        '[CONTROLLER] ✅ Set controller.text and query.value to: "$initialQuery"');
     if (initialSearchType != null) {
       searchType.value = initialSearchType!;
-      print('[CONTROLLER] 🔧 Search type set to: "$initialSearchType"');
     }
     fromHome.value = initialFromHome;
   }
@@ -105,31 +100,27 @@ class SearchPageController extends GetxController {
 
   Future<void> fetchResults() async {
     // this fetches songs, albums, playlists, artists, etc
-    // CRITICAL: Always use query.value directly, NOT a captured final variable
-    // to ensure we get the latest query value
-
-    print('[CONTROLLER] 🔍 fetchResults() called');
-    print('[CONTROLLER] 📊 Current query.value: "${query.value}"');
-    print('[CONTROLLER] 📝 Current controller.text: "${controller.text}"');
+    // Always use the current query value, not the initial query
+    final searchQuery = query.value;
 
     Logger.root.info('[SEARCH] fetchResults called');
-    Logger.root.info('[SEARCH] Current query.value: "${query.value}"');
+    Logger.root.info('[SEARCH] Current query.value: "$searchQuery"');
     Logger.root.info('[SEARCH] Current controller.text: "${controller.text}"');
 
-    if (query.value.isEmpty) {
+    if (searchQuery.isEmpty) {
       Logger.root.warning('[SEARCH] fetchResults called with empty query');
       return;
     }
 
     Logger.root.info(
-      '=== SEARCH START === Query: "${query.value}", Type: ${searchType.value}',
+      '=== SEARCH START === Query: "$searchQuery", Type: ${searchType.value}',
     );
 
     switch (searchType.value) {
       case 'ytm':
         Logger.root.info('[YTM] Starting YouTube Music search...');
         try {
-          final value = await YtMusicService().search(query.value);
+          final value = await YtMusicService().search(searchQuery);
           Logger.root
               .info('[YTM] Search completed. Sections found: ${value.length}');
           for (final section in value) {
@@ -170,7 +161,7 @@ class SearchPageController extends GetxController {
         Logger.root.info('[YT] Starting YouTube search...');
         try {
           final value =
-              await YouTubeServices.instance.fetchSearchResults(query.value);
+              await YouTubeServices.instance.fetchSearchResults(searchQuery);
           Logger.root
               .info('[YT] Search completed. Sections found: ${value.length}');
           for (final section in value) {
@@ -197,7 +188,7 @@ class SearchPageController extends GetxController {
       default:
         Logger.root.info('[SAAVN] Starting Saavn search...');
         try {
-          searchedList.value = await SaavnAPI().fetchSearchResults(query.value);
+          searchedList.value = await SaavnAPI().fetchSearchResults(searchQuery);
           Logger.root.info(
             '[SAAVN] Search completed. Sections found: ${searchedList.length}',
           );
@@ -273,13 +264,10 @@ class SearchPageController extends GetxController {
 
   void handleHistoryChipTap(int index) {
     Logger.root.info('[SEARCH] History chip tapped: ${searchHistory[index]}');
-    print('[CONTROLLER] 📜 History chip tapped: "${searchHistory[index]}"');
     fetched.value = false;
     query.value = searchHistory.removeAt(index).toString().trim();
-    print('[CONTROLLER] 🔄 Updated query.value to: "${query.value}"');
     addToHistory(query.value);
     controller.text = query.value;
-    print('[CONTROLLER] 📝 Updated controller.text to: "${controller.text}"');
     controller.selection = TextSelection.fromPosition(
       TextPosition(
         offset: query.value.length,
@@ -289,19 +277,15 @@ class SearchPageController extends GetxController {
     fromHome.value = false;
     searchedList.clear();
     FocusManager.instance.primaryFocus?.unfocus();
-    print('[CONTROLLER] 🚀 Triggering fetchResults...');
     // Trigger search
     fetchResults();
   }
 
   void handleTrendingChipTap(String value) {
     Logger.root.info('[SEARCH] Trending chip tapped: $value');
-    print('[CONTROLLER] 🔥 Trending chip tapped: "$value"');
     fetched.value = false;
     query.value = value.trim();
-    print('[CONTROLLER] 🔄 Updated query.value to: "${query.value}"');
     controller.text = query.value;
-    print('[CONTROLLER] 📝 Updated controller.text to: "${controller.text}"');
     controller.selection = TextSelection.fromPosition(
       TextPosition(
         offset: query.value.length,
@@ -312,7 +296,6 @@ class SearchPageController extends GetxController {
     fromHome.value = false;
     searchedList.clear();
     FocusManager.instance.primaryFocus?.unfocus();
-    print('[CONTROLLER] 🚀 Triggering fetchResults...');
     // Trigger search
     fetchResults();
   }
@@ -344,10 +327,6 @@ class SearchPageController extends GetxController {
   }
 
   Future<void> handleSubmit(String submittedQuery) async {
-    print('[CONTROLLER] ═══════════════════════════════════════');
-    print('[CONTROLLER] ✅ HANDLE SUBMIT CALLED');
-    print('[CONTROLLER] 📥 Submitted query: "$submittedQuery"');
-    print('[CONTROLLER] 📊 Previous query.value: "${query.value}"');
     Logger.root.info('[SEARCH] ===== SUBMIT STARTED =====');
     Logger.root.info('[SEARCH] Submitted query: "$submittedQuery"');
     Logger.root.info('[SEARCH] Previous query.value: "${query.value}"');
@@ -371,8 +350,6 @@ class SearchPageController extends GetxController {
     );
     searchedList.clear();
 
-    print('[CONTROLLER] ✅ Updated query.value to: "${query.value}"');
-    print('[CONTROLLER] ✅ Updated controller.text to: "${controller.text}"');
     Logger.root.info('[SEARCH] Updated query.value: "${query.value}"');
     Logger.root.info('[SEARCH] Updated controller.text: "${controller.text}"');
     Logger.root.info('[SEARCH] Calling fetchResults...');
@@ -386,7 +363,6 @@ class SearchPageController extends GetxController {
       addToHistory(trimmedQuery);
     }
 
-    print('[CONTROLLER] ═══════════════════════════════════════');
     Logger.root.info('[SEARCH] ===== SUBMIT COMPLETED =====');
   }
 
@@ -427,7 +403,7 @@ class SearchPageController extends GetxController {
   }
 }
 
-class SearchPage extends StatefulWidget {
+class SearchPage extends StatelessWidget {
   final String query;
   final bool fromHome;
   final bool fromDirectSearch;
@@ -443,38 +419,20 @@ class SearchPage extends StatefulWidget {
     this.autofocus = false,
   });
 
-  @override
-  State<SearchPage> createState() => _SearchPageState();
-}
-
-class _SearchPageState extends State<SearchPage> {
-  // Store the tag so it doesn't change on rebuilds
-  late final String _controllerTag;
-
-  @override
-  void initState() {
-    super.initState();
-    // Generate the tag ONCE when the page is first created
-    _controllerTag = DateTime.now().millisecondsSinceEpoch.toString();
-  }
-
   Widget nothingFound(BuildContext context, SearchPageController controller) {
     if (!controller.alertShown.value) {
-      // Defer showing snackbar to next frame to avoid build conflicts
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        ShowSnackBar().showSnackBar(
-          context,
-          AppLocalizations.of(context)!.useVpn,
-          duration: const Duration(seconds: 7),
-          action: SnackBarAction(
-            textColor: Theme.of(context).colorScheme.secondary,
-            label: AppLocalizations.of(context)!.useProxy,
-            onPressed: () {
-              controller.handleUseProxy();
-            },
-          ),
-        );
-      });
+      ShowSnackBar().showSnackBar(
+        context,
+        AppLocalizations.of(context)!.useVpn,
+        duration: const Duration(seconds: 7),
+        action: SnackBarAction(
+          textColor: Theme.of(context).colorScheme.secondary,
+          label: AppLocalizations.of(context)!.useProxy,
+          onPressed: () {
+            controller.handleUseProxy();
+          },
+        ),
+      );
       controller.alertShown.value = true;
     }
     return emptyScreen(
@@ -493,11 +451,11 @@ class _SearchPageState extends State<SearchPage> {
   Widget build(BuildContext context) {
     final controller = Get.put(
       SearchPageController(
-        initialQuery: widget.query,
-        initialFromHome: widget.fromHome,
-        initialSearchType: widget.searchType,
+        initialQuery: query,
+        initialFromHome: fromHome,
+        initialSearchType: searchType,
       ),
-      tag: _controllerTag, // Use the persistent tag
+      tag: DateTime.now().millisecondsSinceEpoch.toString(),
     );
 
     if (!controller.fetchResultCalled.value) {
@@ -515,7 +473,7 @@ class _SearchPageState extends State<SearchPage> {
           body: searchbar.SearchBar(
             controller: controller.controller,
             liveSearch: controller.liveSearch,
-            autofocus: widget.autofocus,
+            autofocus: autofocus,
             hintText: AppLocalizations.of(context)!.searchText,
             onQueryCleared: () {
               controller.clearSearch();
@@ -536,8 +494,7 @@ class _SearchPageState extends State<SearchPage> {
             leading: IconButton(
               icon: const Icon(Icons.arrow_back_rounded),
               onPressed: () {
-                if ((controller.fromHome.value ?? false) ||
-                    widget.fromDirectSearch) {
+                if ((controller.fromHome.value ?? false) || fromDirectSearch) {
                   Navigator.pop(context);
                 } else {
                   controller.handleBackButton();
@@ -690,7 +647,7 @@ class _SearchPageState extends State<SearchPage> {
                             left: 15,
                           ),
                           child: (controller.query.value.isEmpty &&
-                                  widget.query.isEmpty)
+                                  query.isEmpty)
                               ? null
                               : Row(
                                   children: getChoices(context, controller, [
@@ -812,13 +769,13 @@ class _SearchPageState extends State<SearchPage> {
                                                                             subtitle:
                                                                                 '\nShowing Search Results for',
                                                                             secondarySubtitle:
-                                                                                '"${(controller.query.value == '' ? widget.query : controller.query.value).capitalize}"',
+                                                                                '"${(controller.query.value == '' ? query : controller.query.value).capitalize}"',
                                                                             listItemsTitle:
                                                                                 title,
                                                                             loadFunction:
                                                                                 () {
                                                                               return YtMusicService().searchSongs(
-                                                                                controller.query.value == '' ? widget.query : controller.query.value,
+                                                                                controller.query.value == '' ? query : controller.query.value,
                                                                               );
                                                                             },
                                                                           ),
@@ -843,7 +800,7 @@ class _SearchPageState extends State<SearchPage> {
                                                                               ___,
                                                                             ) =>
                                                                                 AlbumSearchPage(
-                                                                              query: controller.query.value == '' ? widget.query : controller.query.value,
+                                                                              query: controller.query.value == '' ? query : controller.query.value,
                                                                               type: title,
                                                                             ),
                                                                           ),
@@ -864,7 +821,7 @@ class _SearchPageState extends State<SearchPage> {
                                                                             ) =>
                                                                                 SongsListPage(
                                                                               listItem: {
-                                                                                'id': controller.query.value == '' ? widget.query : controller.query.value,
+                                                                                'id': controller.query.value == '' ? query : controller.query.value,
                                                                                 'title': title,
                                                                                 'type': 'songs',
                                                                               },
