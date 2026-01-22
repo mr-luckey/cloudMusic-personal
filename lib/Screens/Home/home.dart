@@ -73,7 +73,7 @@ class _HomePageState extends State<HomePage> {
 
   @override
   void initState() {
-    AdManager().initialize();
+    // AdManager().initialize();
     // AdManager.showInterstitialAd();
     _startAdTimer();
     super.initState();

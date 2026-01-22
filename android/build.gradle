@@ -1,5 +1,5 @@
 buildscript {
-   ext.kotlin_version = '1.9.20'
+   ext.kotlin_version = '2.1.0'
 //    compileSdkVersion 35
    
     repositories {
@@ -10,7 +10,7 @@ buildscript {
 
     dependencies {
         // classpath 'com.android.tools.build:gradle:3.4.2'
-       classpath 'com.android.tools.build:gradle:8.5.1'
+       classpath 'com.android.tools.build:gradle:8.6.0'
        classpath 'com.google.gms:google-services:4.4.2'
        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
     }
@@ -45,9 +45,57 @@ tasks.withType(JavaCompile) {
 
 rootProject.buildDir = '../build'
 subprojects {
-    afterEvaluate {
-        android {
-            compileSdkVersion 34
+    afterEvaluate { project ->
+        if (project.hasProperty("android")) {
+            android {
+                compileSdkVersion 34
+            }
+            // Configure Java compatibility
+            if (project.hasProperty("java")) {
+                project.java {
+                    sourceCompatibility = JavaVersion.VERSION_1_8
+                    targetCompatibility = JavaVersion.VERSION_1_8
+                }
+            }
+            // Set namespace for plugins that don't have it
+            try {
+                def currentNamespace = project.android.namespace
+                if (currentNamespace == null || currentNamespace.isEmpty()) {
+                    // First, try to read from AndroidManifest.xml
+                    def manifestFile = project.file("src/main/AndroidManifest.xml")
+                    if (manifestFile.exists()) {
+                        def manifest = new XmlParser().parse(manifestFile)
+                        def packageName = manifest.@package
+                        if (packageName) {
+                            project.android.namespace = packageName
+                        }
+                    } else {
+                        // Fallback to known namespaces
+                        def pluginNamespaces = [
+                            "facebook_audience_network": "com.dsi.facebook_audience_network",
+                            "metadata_god": "dev.metadata_god",
+                            "audiotagger": "com.nicolorebaioli.audiotagger"
+                        ]
+                        if (pluginNamespaces.containsKey(project.name)) {
+                            project.android.namespace = pluginNamespaces[project.name]
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                // If namespace property doesn't exist or can't be accessed, use known mappings
+                def pluginNamespaces = [
+                    "facebook_audience_network": "com.dsi.facebook_audience_network",
+                    "metadata_god": "dev.metadata_god",
+                    "audiotagger": "com.nicolorebaioli.audiotagger"
+                ]
+                if (pluginNamespaces.containsKey(project.name)) {
+                    try {
+                        project.android.namespace = pluginNamespaces[project.name]
+                    } catch (Exception ex) {
+                        // Ignore if we can't set namespace
+                    }
+                }
+            }
         }
     }
 }
