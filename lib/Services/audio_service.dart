@@ -370,8 +370,19 @@ class AudioPlayerHandlerImpl extends BaseAudioHandler
     addQueueItem(newItem);
   }
 
+  Map<String, String> _getAudioHeaders() {
+    return {
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+      'Accept': '*/*',
+      'Accept-Language': 'en-US,en;q=0.9',
+      'Referer': 'https://www.jiosaavn.com/',
+      'Origin': 'https://www.jiosaavn.com',
+    };
+  }
+
   AudioSource? _itemToSource(MediaItem mediaItem) {
     AudioSource? audioSource;
+    final headers = _getAudioHeaders();
     try {
       if (mediaItem.artUri.toString().startsWith('file:')) {
         audioSource =
@@ -425,11 +436,13 @@ class AudioPlayerHandlerImpl extends BaseAudioHandler
                       // Change this to handle yt quality
                       audioSource = LockCachingAudioSource(
                         Uri.parse(cachedData.last['url'].toString()),
+                        headers: headers,
                       );
                     } else {
                       // Change this to handle yt quality
                       audioSource = AudioSource.uri(
                         Uri.parse(cachedData.last['url'].toString()),
+                        headers: headers,
                       );
                     }
                     mediaItem.extras!['url'] = cachedData.last['url'];
@@ -458,10 +471,12 @@ class AudioPlayerHandlerImpl extends BaseAudioHandler
               if (cacheSong) {
                 audioSource = LockCachingAudioSource(
                   Uri.parse(mediaItem.extras!['url'].toString()),
+                  headers: headers,
                 );
               } else {
                 audioSource = AudioSource.uri(
                   Uri.parse(mediaItem.extras!['url'].toString()),
+                  headers: headers,
                 );
               }
               _mediaItemExpando[audioSource] = mediaItem;
@@ -476,6 +491,7 @@ class AudioPlayerHandlerImpl extends BaseAudioHandler
                         "_${preferredQuality.replaceAll(' kbps', '')}.",
                       ),
                 ),
+                headers: headers,
               );
             } else {
               audioSource = AudioSource.uri(
@@ -485,6 +501,7 @@ class AudioPlayerHandlerImpl extends BaseAudioHandler
                         "_${preferredQuality.replaceAll(' kbps', '')}.",
                       ),
                 ),
+                headers: headers,
               );
             }
           }
