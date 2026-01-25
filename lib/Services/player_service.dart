@@ -1,5 +1,3 @@
-
-
 import 'dart:io';
 
 import 'package:audio_service/audio_service.dart';
@@ -33,7 +31,7 @@ class PlayerInvoke {
     if (shuffle) finalList.shuffle();
     if (offline == null) {
       if (audioHandler.mediaItem.value?.extras!['url'].startsWith('http')
-      as bool) {
+          as bool) {
         offline = false;
       } else {
         offline = true;
@@ -49,8 +47,8 @@ class PlayerInvoke {
         fromDownloads
             ? setDownValues(finalList, globalIndex)
             : (Platform.isWindows || Platform.isLinux)
-            ? setOffDesktopValues(finalList, globalIndex)
-            : setOffValues(finalList, globalIndex);
+                ? setOffDesktopValues(finalList, globalIndex)
+                : setOffValues(finalList, globalIndex);
       } else {
         setValues(
           finalList,
@@ -63,21 +61,24 @@ class PlayerInvoke {
   }
 
   static Future<MediaItem> setTags(
-      SongModel response,
-      Directory tempDir,
-      ) async {
+    SongModel response,
+    Directory tempDir,
+  ) async {
     String playTitle = response.title;
     playTitle == 'Unknown'
         ? playTitle = response.displayNameWOExt
         : playTitle = response.title;
-    String playArtist = response.artist != null ? response.artist! : '<unknown>';
+    String playArtist =
+        response.artist != null ? response.artist! : '<unknown>';
     playArtist == '<unknown>'
         ? playArtist = 'Unknown'
         : playArtist = response.artist!;
 
-    final String playAlbum = response.album != null ? response.album! : '<unknown>';
+    final String playAlbum =
+        response.album != null ? response.album! : '<unknown>';
     final int playDuration = response.duration ?? 180000;
-    final String? imagePath = '${tempDir.path}/${response.displayNameWOExt}.png';
+    final String? imagePath =
+        '${tempDir.path}/${response.displayNameWOExt}.png';
 
     final MediaItem tempDict = MediaItem(
       id: response.id.toString(),
@@ -111,7 +112,7 @@ class PlayerInvoke {
       final List<MediaItem> queue = [];
       queue.addAll(
         response.map(
-              (song) => MediaItem(
+          (song) => MediaItem(
             id: song['id'].toString(),
             album: song['album'].toString(),
             artist: song['artist'].toString(),
@@ -162,7 +163,7 @@ class PlayerInvoke {
     final List<MediaItem> queue = [];
     queue.addAll(
       response.map(
-            (song) => MediaItemConverter.downMapToMediaItem(song as Map),
+        (song) => MediaItemConverter.downMapToMediaItem(song as Map),
       ),
     );
     updateNplay(queue, index);
@@ -237,15 +238,15 @@ class PlayerInvoke {
   }
 
   static Future<void> setValues(
-      List response,
-      int index, {
-        bool recommend = true,
-        // String? playlistBox,
-      }) async {
+    List response,
+    int index, {
+    bool recommend = true,
+    // String? playlistBox,
+  }) async {
     final List<MediaItem> queue = [];
     final Map playItem = response[index] as Map;
     final Map? nextItem =
-    index == response.length - 1 ? null : response[index + 1] as Map;
+        index == response.length - 1 ? null : response[index + 1] as Map;
     if (playItem['genre'] == 'YouTube') {
       await refreshYtLink(playItem);
     }
@@ -255,7 +256,7 @@ class PlayerInvoke {
 
     queue.addAll(
       response.map(
-            (song) => MediaItemConverter.mapToMediaItem(
+        (song) => MediaItemConverter.mapToMediaItem(
           song as Map,
           autoplay: recommend,
           // playlistBox: playlistBox,
@@ -271,9 +272,9 @@ class PlayerInvoke {
     await audioHandler.customAction('skipToMediaItem', {'id': queue[index].id});
     await audioHandler.play();
     final String repeatMode =
-    Hive.box('settings').get('repeatMode', defaultValue: 'None').toString();
+        Hive.box('settings').get('repeatMode', defaultValue: 'None').toString();
     final bool enforceRepeat =
-    Hive.box('settings').get('enforceRepeat', defaultValue: false) as bool;
+        Hive.box('settings').get('enforceRepeat', defaultValue: false) as bool;
     if (enforceRepeat) {
       switch (repeatMode) {
         case 'None':

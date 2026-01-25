@@ -423,19 +423,49 @@ class AudioPlayerHandlerImpl extends BaseAudioHandler
     }
   }
 
-  Map<String, String> _getAudioHeaders() {
-    return {
-      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-      'Accept': '*/*',
-      'Accept-Language': 'en-US,en;q=0.9',
-      'Referer': 'https://www.jiosaavn.com/',
-      'Origin': 'https://www.jiosaavn.com',
-    };
+  Map<String, String> _getAudioHeaders({bool isYouTube = false}) {
+    if (isYouTube) {
+      // YouTube-specific headers
+      return {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': '*/*',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Accept-Encoding': 'gzip, deflate, br',
+        'Referer': 'https://www.youtube.com/',
+        'Origin': 'https://www.youtube.com',
+        'Sec-Fetch-Dest': 'empty',
+        'Sec-Fetch-Mode': 'cors',
+        'Sec-Fetch-Site': 'cross-site',
+      };
+    } else {
+      // JioSaavn headers
+      return {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': '*/*',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Referer': 'https://www.jiosaavn.com/',
+        'Origin': 'https://www.jiosaavn.com',
+      };
+    }
   }
 
-  AudioSource? _itemToSource(MediaItem mediaItem) {
+  AudioSource? _itemToSource(MediaItem mediaItem, {bool skipRefresh = false}) {
     AudioSource? audioSource;
-    final headers = _getAudioHeaders();
+    // Use YouTube headers for YouTube content, JioSaavn headers for others
+    final isYouTube = mediaItem.genre == 'YouTube';
+    final headers = _getAudioHeaders(isYouTube: isYouTube);
+    
+    if (!skipRefresh) {
+      print('🎵 [AUDIO SOURCE] Creating audio source for: ${mediaItem.title}');
+      print('🎵 [AUDIO SOURCE] Genre: ${mediaItem.genre}, IsYouTube: $isYouTube');
+    }
+    final urlString = mediaItem.extras?['url']?.toString() ?? '';
+    final urlPreview = urlString.length > 80 ? '${urlString.substring(0, 80)}...' : urlString;
+    if (!skipRefresh) {
+      print('🎵 [AUDIO SOURCE] URL: $urlPreview');
+      print('🎵 [AUDIO SOURCE] Headers Referer: ${headers['Referer']}');
+    }
+    
     try {
       if (mediaItem.artUri.toString().startsWith('file:')) {
         audioSource =
@@ -474,20 +504,43 @@ class AudioPlayerHandlerImpl extends BaseAudioHandler
 
                   if ((DateTime.now().millisecondsSinceEpoch ~/ 1000) + 350 >
                       minExpiredAt) {
-                    Logger.root.info(
-                      'youtube link expired for ${mediaItem.title}, refreshing',
-                    );
-                    refreshLinks.add(mediaItem.id);
-                    if (!jobRunning) {
-                      refreshJob();
+                    if (skipRefresh) {
+                      // For non-current songs, use cached URL without refreshing
+                      final cachedUrl = cachedData.last['url']?.toString();
+                      if (cachedUrl != null) {
+                        if (cacheSong) {
+                          audioSource = LockCachingAudioSource(
+                            Uri.parse(cachedUrl),
+                            headers: headers,
+                          );
+                        } else {
+                          audioSource = AudioSource.uri(
+                            Uri.parse(cachedUrl),
+                            headers: headers,
+                          );
+                        }
+                        mediaItem.extras!['url'] = cachedUrl;
+                        _mediaItemExpando[audioSource] = mediaItem;
+                        return audioSource;
+                      }
+                    } else {
+                      Logger.root.info(
+                        'youtube link expired for ${mediaItem.title}, refreshing',
+                      );
+                      refreshLinks.add(mediaItem.id);
+                      if (!jobRunning) {
+                        refreshJob();
+                      }
                     }
                   } else {
                     final cachedUrl = cachedData.last['url']?.toString();
                     if (cachedUrl == null) {
-                      Logger.root.warning('Cached URL is null, refreshing');
-                      refreshLinks.add(mediaItem.id);
-                      if (!jobRunning) {
-                        refreshJob();
+                      if (!skipRefresh) {
+                        Logger.root.warning('Cached URL is null, refreshing');
+                        refreshLinks.add(mediaItem.id);
+                        if (!jobRunning) {
+                          refreshJob();
+                        }
                       }
                       return null;
                     }
@@ -497,9 +550,13 @@ class AudioPlayerHandlerImpl extends BaseAudioHandler
                     final isValidated = lastValidated != null && 
                         DateTime.now().difference(lastValidated).inMinutes < 5;
                     
-                    Logger.root.info(
-                      'youtube link found in cache for ${mediaItem.title}${isValidated ? " (recently validated)" : ""}',
-                    );
+                    if (!skipRefresh) {
+                      Logger.root.info(
+                        'youtube link found in cache for ${mediaItem.title}${isValidated ? " (recently validated)" : ""}',
+                      );
+                      print('🎵 [AUDIO SOURCE] Using cached URL for YouTube video');
+                      print('🎵 [AUDIO SOURCE] Cached URL: ${cachedUrl.substring(0, cachedUrl.length > 80 ? 80 : cachedUrl.length)}...');
+                    }
                     
                     if (cacheSong) {
                       // Change this to handle yt quality
@@ -522,35 +579,50 @@ class AudioPlayerHandlerImpl extends BaseAudioHandler
                       _validatedUrls[cachedUrl] = DateTime.now();
                     }
                     
+                    if (!skipRefresh) {
+                      print('✅ [AUDIO SOURCE] Audio source created successfully with YouTube headers');
+                    }
                     return audioSource;
                   }
                 } else {
+                  if (!skipRefresh) {
+                    Logger.root.info(
+                      'old youtube link cache found for ${mediaItem.title}, refreshing',
+                    );
+                    refreshLinks.add(mediaItem.id);
+                    if (!jobRunning) {
+                      refreshJob();
+                    }
+                  }
+                }
+              } else {
+                if (!skipRefresh) {
                   Logger.root.info(
-                    'old youtube link cache found for ${mediaItem.title}, refreshing',
+                    'youtube link not found in cache for ${mediaItem.title}, refreshing',
                   );
                   refreshLinks.add(mediaItem.id);
                   if (!jobRunning) {
                     refreshJob();
                   }
                 }
-              } else {
-                Logger.root.info(
-                  'youtube link not found in cache for ${mediaItem.title}, refreshing',
-                );
-                refreshLinks.add(mediaItem.id);
-                if (!jobRunning) {
-                  refreshJob();
-                }
               }
             } else {
               final url = mediaItem.extras!['url']?.toString();
               if (url == null) {
-                Logger.root.warning('URL is null for ${mediaItem.title}, refreshing');
-                refreshLinks.add(mediaItem.id);
-                if (!jobRunning) {
-                  refreshJob();
+                if (!skipRefresh) {
+                  print('❌ [AUDIO SOURCE] URL is null for ${mediaItem.title}, refreshing');
+                  Logger.root.warning('URL is null for ${mediaItem.title}, refreshing');
+                  refreshLinks.add(mediaItem.id);
+                  if (!jobRunning) {
+                    refreshJob();
+                  }
                 }
                 return null;
+              }
+              
+              if (!skipRefresh) {
+                print('🎵 [AUDIO SOURCE] Using non-expired URL (not from cache)');
+                print('🎵 [AUDIO SOURCE] URL: ${url.substring(0, url.length > 80 ? 80 : url.length)}...');
               }
               
               // Mark URL as validated
@@ -568,6 +640,9 @@ class AudioPlayerHandlerImpl extends BaseAudioHandler
                 );
               }
               _mediaItemExpando[audioSource] = mediaItem;
+              if (!skipRefresh) {
+                print('✅ [AUDIO SOURCE] Audio source created successfully');
+              }
               return audioSource;
             }
           } else {
@@ -604,7 +679,7 @@ class AudioPlayerHandlerImpl extends BaseAudioHandler
     return audioSource;
   }
 
-  List<AudioSource> _itemsToSources(List<MediaItem> mediaItems) {
+  List<AudioSource> _itemsToSources(List<MediaItem> mediaItems, {int? currentIndex}) {
     preferredMobileQuality = Hive.box('settings')
         .get('streamingQuality', defaultValue: '96 kbps')
         .toString();
@@ -617,7 +692,13 @@ class AudioPlayerHandlerImpl extends BaseAudioHandler
     cacheSong =
         Hive.box('settings').get('cacheSong', defaultValue: false) as bool;
     useDown = Hive.box('settings').get('useDown', defaultValue: true) as bool;
-    return mediaItems.map(_itemToSource).whereType<AudioSource>().toList();
+    return mediaItems.asMap().entries.map((entry) {
+      final index = entry.key;
+      final mediaItem = entry.value;
+      // Only refresh URLs for current song and next song, skip refresh for others
+      final shouldRefresh = currentIndex != null && (index == currentIndex || index == currentIndex + 1);
+      return _itemToSource(mediaItem, skipRefresh: !shouldRefresh);
+    }).whereType<AudioSource>().toList();
   }
 
   @override
@@ -849,9 +930,9 @@ class AudioPlayerHandlerImpl extends BaseAudioHandler
   }
 
   @override
-  Future<void> updateQueue(List<MediaItem> newQueue) async {
+  Future<void> updateQueue(List<MediaItem> newQueue, {int? currentIndex}) async {
     await _playlist.clear();
-    await _playlist.addAll(_itemsToSources(newQueue));
+    await _playlist.addAll(_itemsToSources(newQueue, currentIndex: currentIndex));
     addLastQueue(newQueue);
     // stationId = '';
     // stationNames = newQueue.map((e) => e.id).toList();
@@ -1133,19 +1214,52 @@ class AudioPlayerHandlerImpl extends BaseAudioHandler
 
   void _playbackError(err) {
     Logger.root.severe('Playback Error from audioservice: ${err.code}', err);
+    
+    // Debug: Print full error details
+    if (err is PlatformException) {
+      print('🔍 [ERROR DEBUG] PlatformException detected');
+      print('🔍 [ERROR DEBUG] Error code: ${err.code}');
+      print('🔍 [ERROR DEBUG] Error message: ${err.message}');
+      print('🔍 [ERROR DEBUG] Error details: ${err.details}');
+      print('🔍 [ERROR DEBUG] Error toString: ${err.toString()}');
+    } else {
+      print('🔍 [ERROR DEBUG] Error type: ${err.runtimeType}');
+      print('🔍 [ERROR DEBUG] Error toString: ${err.toString()}');
+    }
+    
     if (err is PlatformException &&
         err.code == 'abort' &&
         err.message == 'Connection aborted') return;
     
     // Handle 403 errors by refreshing the URL
+    // Check multiple possible error formats from ExoPlayer
+    bool is403Error = false;
     if (err is PlatformException) {
-      final errorMessage = err.message?.toString().toLowerCase() ?? '';
-      if (errorMessage.contains('403') || 
+      final errorCode = err.code.toString().toLowerCase();
+      final errorMessage = err.message.toString().toLowerCase();
+      final errorDetails = err.details?.toString().toLowerCase() ?? '';
+      final errorString = err.toString().toLowerCase();
+      
+      // Check all possible places where 403 might appear
+      is403Error = 
+          errorCode.contains('403') ||
+          errorMessage.contains('403') ||
           errorMessage.contains('response code: 403') ||
-          errorMessage.contains('forbidden')) {
+          errorMessage.contains('forbidden') ||
+          errorDetails.contains('403') ||
+          errorDetails.contains('response code: 403') ||
+          errorString.contains('403') ||
+          errorString.contains('response code: 403') ||
+          errorString.contains('forbidden') ||
+          (err.code == '0' && errorMessage.contains('source error')); // ExoPlayer sometimes uses code '0' for source errors
+      
+      if (is403Error) {
+        print('🚨 [403 DETECTED] 403 error detected! Code: ${err.code}, Message: ${err.message}');
         Logger.root.info('Detected 403 error, attempting to refresh URL');
         _handle403Error();
         return;
+      } else {
+        print('ℹ️ [ERROR] Not a 403 error - Code: ${err.code}, Message: ${err.message}');
       }
     }
     
@@ -1186,47 +1300,67 @@ class AudioPlayerHandlerImpl extends BaseAudioHandler
         refreshJob();
       }
       
-      // Wait a bit for the refresh to complete
-      await Future.delayed(const Duration(seconds: 2));
-      
-      // Try to get the refreshed URL from cache
-      if (Hive.box('ytlinkcache').containsKey(currentItem.id)) {
-        final cachedData = Hive.box('ytlinkcache').get(currentItem.id);
-        if (cachedData is List && cachedData.isNotEmpty) {
-          final newUrl = cachedData.last['url']?.toString();
-          if (newUrl != null && newUrl != currentUrl) {
-            Logger.root.info('Found refreshed URL, updating media item');
-            
-            // Update the media item with new URL
-            currentItem.extras!['url'] = newUrl;
-            currentItem.extras!['expire_at'] = cachedData.last['expireAt']?.toString() ?? 
-                (DateTime.now().millisecondsSinceEpoch ~/ 1000 + 3600).toString();
-            
-            // Mark new URL as validated
-            _validatedUrls[newUrl] = DateTime.now();
-            
-            // Get current index and replace the audio source
-            final currentIndex = _player!.currentIndex;
-            if (currentIndex != null) {
-              final newSource = _itemToSource(currentItem);
-              if (newSource != null) {
-                try {
-                  // Replace the current source
-                  await _playlist.removeAt(currentIndex);
-                  await _playlist.insert(currentIndex, newSource);
-                  
-                  // Seek to current position to resume playback
-                  final currentPosition = _player!.position;
-                  await _player!.seek(currentPosition, index: currentIndex);
-                  
-                  Logger.root.info('Successfully refreshed and updated URL');
-                } catch (e) {
-                  Logger.root.severe('Error replacing audio source: $e');
+      // Wait for the refresh to complete - check multiple times
+      bool urlRefreshed = false;
+      for (int attempt = 0; attempt < 5; attempt++) {
+        await Future.delayed(const Duration(seconds: 1));
+        
+        // Try to get the refreshed URL from cache
+        if (Hive.box('ytlinkcache').containsKey(currentItem.id)) {
+          final cachedData = Hive.box('ytlinkcache').get(currentItem.id);
+          if (cachedData is List && cachedData.isNotEmpty) {
+            final newUrl = cachedData.last['url']?.toString();
+            if (newUrl != null && newUrl != currentUrl) {
+              print('✅ [403 HANDLER] Found refreshed URL on attempt ${attempt + 1}');
+              Logger.root.info('Found refreshed URL, updating media item');
+              
+              // Update the media item with new URL
+              currentItem.extras!['url'] = newUrl;
+              currentItem.extras!['expire_at'] = cachedData.last['expireAt']?.toString() ?? 
+                  (DateTime.now().millisecondsSinceEpoch ~/ 1000 + 3600).toString();
+              
+              // Mark new URL as validated
+              _validatedUrls[newUrl] = DateTime.now();
+              
+              // Get current index and replace the audio source
+              final currentIndex = _player!.currentIndex;
+              if (currentIndex != null) {
+                final newSource = _itemToSource(currentItem);
+                if (newSource != null) {
+                  try {
+                    print('🔄 [403 HANDLER] Replacing audio source at index $currentIndex');
+                    // Replace the current source
+                    await _playlist.removeAt(currentIndex);
+                    await _playlist.insert(currentIndex, newSource);
+                    
+                    // Seek to current position to resume playback
+                    final currentPosition = _player!.position;
+                    await _player!.seek(currentPosition, index: currentIndex);
+                    
+                    print('✅ [403 HANDLER] Successfully refreshed and updated URL');
+                    Logger.root.info('Successfully refreshed and updated URL');
+                    urlRefreshed = true;
+                    break;
+                  } catch (e) {
+                    print('❌ [403 HANDLER] Error replacing audio source: $e');
+                    Logger.root.severe('Error replacing audio source: $e');
+                  }
+                } else {
+                  print('❌ [403 HANDLER] Failed to create new audio source');
                 }
+              } else {
+                print('❌ [403 HANDLER] Current index is null');
               }
+            } else {
+              print('⏳ [403 HANDLER] URL not refreshed yet (attempt ${attempt + 1}/5), waiting...');
             }
           }
         }
+      }
+      
+      if (!urlRefreshed) {
+        print('⚠️ [403 HANDLER] URL refresh timeout - could not get new URL after 5 attempts');
+        Logger.root.warning('URL refresh timeout - could not get new URL');
       }
     } catch (e) {
       Logger.root.severe('Error handling 403: $e');

@@ -424,13 +424,16 @@ class YouTubeServices {
   }
 
   Future<List<Map>> getYtStreamUrls(String videoId) async {
+    print('🎬 [VIDEO->AUDIO] Starting conversion for video ID: $videoId');
     try {
       List<Map> urlData = [];
 
       // check cache first
       if (Hive.box('ytlinkcache').containsKey(videoId)) {
+        print('📦 [VIDEO->AUDIO] Cache found for video: $videoId');
         final cachedData = Hive.box('ytlinkcache').get(videoId);
         if (cachedData is List) {
+          print('✅ [VIDEO->AUDIO] Cache is valid list format with ${cachedData.length} entries');
           int minExpiredAt = 0;
           for (final e in cachedData) {
             final int cachedExpiredAt = int.parse(e['expireAt'].toString());
@@ -439,26 +442,35 @@ class YouTubeServices {
             }
           }
 
-          if ((DateTime.now().millisecondsSinceEpoch ~/ 1000000) + 350 >
-              minExpiredAt) {
+          final currentTime = DateTime.now().millisecondsSinceEpoch ~/ 1000000;
+          final timeUntilExpiry = minExpiredAt - (currentTime + 350);
+          print('⏰ [VIDEO->AUDIO] Cache expiry check - Current: $currentTime, Expires: $minExpiredAt, Time left: ${timeUntilExpiry}s');
+
+          if (currentTime + 350 > minExpiredAt) {
             // cache expired
+            print('⏳ [VIDEO->AUDIO] Cache expired, fetching fresh audio URLs...');
             urlData = await getUri(videoId);
           } else {
             // giving cache link
+            print('✅ [VIDEO->AUDIO] Using cached audio URLs (${cachedData.length} formats available)');
             Logger.root.info('cache found for $videoId');
             urlData = List<Map>.from(
                 cachedData.map((e) => Map<dynamic, dynamic>.from(e as Map)));
+            print('🎵 [VIDEO->AUDIO] Cached URLs: ${urlData.map((e) => '${e['bitrate']}kbps (${e['codec']})').join(', ')}');
           }
         } else {
           // old version cache is present
+          print('⚠️ [VIDEO->AUDIO] Old cache format detected, refreshing...');
           urlData = await getUri(videoId);
         }
       } else {
         //cache not present
+        print('🆕 [VIDEO->AUDIO] No cache found, fetching audio URLs for first time...');
         urlData = await getUri(videoId);
       }
 
       try {
+        print('💾 [VIDEO->AUDIO] Saving ${urlData.length} audio URLs to cache for video: $videoId');
         await Hive.box('ytlinkcache')
             .put(
               videoId,
@@ -469,12 +481,15 @@ class YouTubeServices {
                 'Hive Error in formatVideo, you probably forgot to open box.\nError: $error',
               ),
             );
+        print('✅ [VIDEO->AUDIO] Successfully cached audio URLs');
       } catch (e) {
         Logger.root.severe(
           'Hive Error in formatVideo, you probably forgot to open box.\nError: $e',
         );
+        print('❌ [VIDEO->AUDIO] Failed to cache URLs: $e');
       }
 
+      print('🎉 [VIDEO->AUDIO] Conversion complete! Returning ${urlData.length} audio URLs');
       return urlData;
     } catch (e) {
       Logger.root.severe('Error in getYtStreamUrls: $e');
@@ -541,17 +556,24 @@ class YouTubeServices {
         return await _getUriFromYtMusicFallback(videoId);
       }
 
+      print('🔄 [VIDEO->AUDIO] Processing ${sortedStreamInfo.length} audio streams from youtube_explode_dart...');
       Logger.root.info(
           'Processing ${sortedStreamInfo.length} streams for video $videoId');
 
       final List<Map> result = [];
+      int processedCount = 0;
+      
       for (final e in sortedStreamInfo) {
         try {
+          processedCount++;
           final url = e.url;
           final urlString = url.toString();
+          
+          print('🔍 [VIDEO->AUDIO] Processing stream $processedCount/${sortedStreamInfo.length}: ${e.bitrate.kiloBitsPerSecond}kbps ${e.codec.subtype}');
 
           // Validate URL is not empty and is a valid HTTP/HTTPS URL
           if (urlString.isEmpty || !urlString.startsWith('http')) {
+            print('❌ [VIDEO->AUDIO] Invalid URL format: $urlString');
             Logger.root.warning(
               'Stream info has invalid URL for video $videoId: $urlString',
             );
@@ -562,26 +584,31 @@ class YouTubeServices {
           try {
             final uri = Uri.parse(urlString);
             if (!uri.hasScheme || (!uri.scheme.startsWith('http'))) {
+              print('❌ [VIDEO->AUDIO] Invalid URL scheme: $urlString');
               Logger.root.warning(
                 'Stream URL has invalid scheme for video $videoId: $urlString',
               );
               continue;
             }
           } catch (parseError) {
+            print('❌ [VIDEO->AUDIO] URL parse error: $parseError');
             Logger.root.warning(
               'Failed to parse stream URL for video $videoId: $parseError',
             );
             continue;
           }
 
-          result.add({
+          final streamData = {
             'bitrate': e.bitrate.kiloBitsPerSecond.round().toString(),
             'codec': e.codec.subtype,
             'qualityLabel': e.qualityLabel,
             'size': e.size.totalMegaBytes.toStringAsFixed(2),
             'url': urlString,
             'expireAt': getExpireAt(urlString),
-          });
+          };
+          
+          print('✅ [VIDEO->AUDIO] Added audio stream: ${streamData['bitrate']}kbps ${streamData['codec']}, Size: ${streamData['size']}MB');
+          result.add(streamData);
         } catch (streamError) {
           Logger.root.warning(
             'Error processing stream info for video $videoId: $streamError',
@@ -769,22 +796,32 @@ class YouTubeServices {
       }
 
       // Filter out any problematic streams before processing
+      print('🎬 [VIDEO->AUDIO] Manifest retrieved! Total audio-only streams in manifest: ${manifest.audioOnly.length}');
       final List<AudioOnlyStreamInfo> validStreams = [];
+      int invalidStreams = 0;
+      
       for (final stream in manifest.audioOnly) {
         try {
           // Try to access the URL to ensure it's valid
           // This will catch runtime errors if the URL was constructed from null data
           final url = stream.url;
           final urlString = url.toString();
+          print('🔍 [VIDEO->AUDIO] Checking stream: Bitrate=${stream.bitrate.kiloBitsPerSecond}kbps, Codec=${stream.codec.subtype}');
+          
           if (urlString.isNotEmpty && urlString.contains('http')) {
             // Additional validation: ensure URL is actually a valid HTTP/HTTPS URL
             validStreams.add(stream);
+            print('✅ [VIDEO->AUDIO] Valid audio stream: ${stream.bitrate.kiloBitsPerSecond}kbps ${stream.codec.subtype}');
           } else {
+            invalidStreams++;
+            print('❌ [VIDEO->AUDIO] Invalid stream URL: $urlString');
             Logger.root.warning(
               'Stream has invalid URL for video $videoId: $urlString',
             );
           }
         } catch (e) {
+          invalidStreams++;
+          print('❌ [VIDEO->AUDIO] Error processing stream: $e');
           Logger.root.warning(
             'Skipping invalid stream for video $videoId: $e',
           );
@@ -792,18 +829,25 @@ class YouTubeServices {
         }
       }
 
+      print('📊 [VIDEO->AUDIO] Stream validation: ${validStreams.length} valid, $invalidStreams invalid');
+      
       if (validStreams.isEmpty) {
+        print('❌ [VIDEO->AUDIO] No valid audio streams found for video: $videoId');
         Logger.root.warning('No valid streams found for video: $videoId');
         return [];
       }
 
+      print('✅ [VIDEO->AUDIO] Found ${validStreams.length} valid audio streams for video $videoId');
       Logger.root.info(
           'Found ${validStreams.length} valid streams for video $videoId');
 
+      print('🔄 [VIDEO->AUDIO] Sorting ${validStreams.length} streams by bitrate...');
       final List<AudioOnlyStreamInfo> sortedStreamInfo = validStreams
         ..sort((a, b) => a.bitrate.compareTo(b.bitrate));
+      print('📊 [VIDEO->AUDIO] Sorted streams: ${sortedStreamInfo.map((e) => '${e.bitrate.kiloBitsPerSecond}kbps').join(' -> ')}');
 
       if (onlyMp4 || Platform.isIOS || Platform.isMacOS) {
+        print('🍎 [VIDEO->AUDIO] Platform requires MP4/M4A format, filtering...');
         final List<AudioOnlyStreamInfo> m4aStreams =
             sortedStreamInfo.where((element) {
           try {
@@ -894,14 +938,25 @@ class YouTubeServices {
       }
 
       // Filter for audio-only formats and extract URLs
+      print('🔍 [VIDEO->AUDIO] Filtering ${adaptiveFormats.length} adaptive formats for audio-only streams...');
       final List<Map> result = [];
+      int videoFormatsSkipped = 0;
+      int audioFormatsFound = 0;
+      
       for (final format in adaptiveFormats) {
         try {
           // Check if it's audio-only (has audioQuality and no video quality)
           final mimeType = format['mimeType']?.toString() ?? '';
+          print('📋 [VIDEO->AUDIO] Checking format: MIME=$mimeType');
+          
           if (!mimeType.contains('audio')) {
+            videoFormatsSkipped++;
+            print('⏭️ [VIDEO->AUDIO] Skipping video format: $mimeType');
             continue; // Skip video formats
           }
+          
+          audioFormatsFound++;
+          print('🎵 [VIDEO->AUDIO] Found audio format: $mimeType');
 
           // Get URL - could be in 'url' or 'signatureCipher'
           String? urlString = format['url']?.toString();
@@ -910,6 +965,7 @@ class YouTubeServices {
           if (urlString == null || urlString.isEmpty) {
             final signatureCipher = format['signatureCipher']?.toString();
             if (signatureCipher != null && signatureCipher.isNotEmpty) {
+              print('🔐 [VIDEO->AUDIO] Extracting URL from signature cipher for video $videoId');
               Logger.root.info(
                   '🔐 Extracting URL from signature cipher for video $videoId');
 
@@ -925,34 +981,41 @@ class YouTubeServices {
                 if (baseUrl != null && baseUrl.isNotEmpty) {
                   if (signature != null && signature.isNotEmpty) {
                     urlString = '$baseUrl&$sigParam=$signature';
+                    print('✅ [VIDEO->AUDIO] Extracted signature for video $videoId');
                     Logger.root
                         .info('✅ Extracted signature for video $videoId');
                   } else {
                     urlString = baseUrl;
+                    print('⚠️ [VIDEO->AUDIO] Using base URL without signature for $videoId');
                     Logger.root.warning(
                         '⚠️ Using base URL without signature for $videoId');
                   }
                 } else {
+                  print('❌ [VIDEO->AUDIO] Failed to extract base URL from signatureCipher for $videoId');
                   Logger.root.fine(
                       'Failed to extract base URL from signatureCipher for $videoId');
                   continue;
                 }
               } catch (cipherError) {
+                print('❌ [VIDEO->AUDIO] Error parsing signatureCipher for $videoId: $cipherError');
                 Logger.root.warning(
                     'Error parsing signatureCipher for $videoId: $cipherError');
                 continue;
               }
             } else {
+              print('❌ [VIDEO->AUDIO] No URL or signatureCipher found for format');
               continue;
             }
           }
 
-          // Validate URL
-          if (urlString == null ||
-              urlString.isEmpty ||
-              !urlString.startsWith('http')) {
+          // Validate URL - at this point urlString should not be null due to flow control above
+          final finalUrl = urlString;
+          if (finalUrl.isEmpty || !finalUrl.startsWith('http')) {
+            print('❌ [VIDEO->AUDIO] Invalid URL after processing: ${finalUrl.isEmpty ? "empty" : "not http"}');
             continue;
           }
+          
+          print('✅ [VIDEO->AUDIO] Valid audio URL extracted: ${finalUrl.substring(0, finalUrl.length > 50 ? 50 : finalUrl.length)}...');
 
           // Extract bitrate and other info
           final bitrate = format['bitrate'] ?? 0;
@@ -963,15 +1026,20 @@ class YouTubeServices {
           final sizeMB =
               (int.tryParse(contentLength.toString()) ?? 0) / (1024 * 1024);
 
+          final codec = mimeType.contains('mp4')
+              ? 'mp4a'
+              : (mimeType.contains('webm') ? 'opus' : 'unknown');
+          final bitrateKbps = (bitrate ~/ 1000).toString();
+          
+          print('✅ [VIDEO->AUDIO] Extracted audio stream: ${bitrateKbps}kbps, $codec, Quality: $audioQuality, Size: ${sizeMB.toStringAsFixed(2)}MB');
+
           result.add({
-            'bitrate': (bitrate ~/ 1000).toString(), // Convert to kbps
-            'codec': mimeType.contains('mp4')
-                ? 'mp4a'
-                : (mimeType.contains('webm') ? 'opus' : 'unknown'),
+            'bitrate': bitrateKbps, // Convert to kbps
+            'codec': codec,
             'qualityLabel': audioQuality,
             'size': sizeMB.toStringAsFixed(2),
-            'url': urlString,
-            'expireAt': getExpireAt(urlString),
+            'url': finalUrl,
+            'expireAt': getExpireAt(finalUrl),
           });
         } catch (formatError) {
           Logger.root.warning(
@@ -981,7 +1049,12 @@ class YouTubeServices {
         }
       }
 
+      print('📊 [VIDEO->AUDIO] Format filtering summary: $audioFormatsFound audio formats found, $videoFormatsSkipped video formats skipped');
+      
+      print('📊 [VIDEO->AUDIO] Format filtering summary: $audioFormatsFound audio formats found, $videoFormatsSkipped video formats skipped');
+      
       if (result.isEmpty) {
+        print('❌ [VIDEO->AUDIO] No valid audio formats extracted from YT Music API for video $videoId');
         Logger.root.warning(
           'No valid audio formats extracted from YT Music API for video $videoId',
         );
@@ -989,16 +1062,19 @@ class YouTubeServices {
       }
 
       // Sort by bitrate
+      print('🔄 [VIDEO->AUDIO] Sorting ${result.length} audio streams by bitrate...');
       result.sort((a, b) {
         final bitrateA = int.tryParse(a['bitrate'].toString()) ?? 0;
         final bitrateB = int.tryParse(b['bitrate'].toString()) ?? 0;
         return bitrateA.compareTo(bitrateB);
       });
 
+      print('🎵 [VIDEO->AUDIO] Sorted audio streams: ${result.map((e) => '${e['bitrate']}kbps').join(' -> ')}');
       Logger.root.info(
         'Successfully extracted ${result.length} stream URLs using YT Music API fallback for video $videoId',
       );
 
+      print('✅ [VIDEO->AUDIO] YT Music API conversion complete: ${result.length} audio URLs ready');
       return result;
     } catch (e, stackTrace) {
       Logger.root.severe(
