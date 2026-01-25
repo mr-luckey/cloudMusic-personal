@@ -45,6 +45,9 @@ class AudioPlayerHandlerImpl extends BaseAudioHandler
       Hive.isBoxOpen('downloads') ? Hive.box('downloads') : null;
   final List<String> refreshLinks = [];
   bool jobRunning = false;
+  Completer<void>? _playlistInitialized;
+  final Map<String, DateTime> _validatedUrls = {}; // Cache for validated URLs
+  bool _isRefreshingUrl = false; // Flag to prevent multiple simultaneous refreshes
 
   final BehaviorSubject<List<MediaItem>> _recentSubject =
       BehaviorSubject.seeded(<MediaItem>[]);
@@ -269,6 +272,9 @@ class AudioPlayerHandlerImpl extends BaseAudioHandler
         )
         .pipe(queue);
 
+    // Initialize completer to track playlist initialization
+    _playlistInitialized = Completer<void>();
+
     try {
       if (loadStart) {
         final List lastQueueList = await Hive.box('cache')
@@ -292,6 +298,8 @@ class AudioPlayerHandlerImpl extends BaseAudioHandler
               _onError(error, stackTrace, stopService: true);
               return null;
             });
+            _playlistInitialized?.complete();
+            _playlistInitialized = null;
           } else {
             await _playlist.addAll(_itemsToSources(lastQueue));
             try {
@@ -308,6 +316,8 @@ class AudioPlayerHandlerImpl extends BaseAudioHandler
                 _onError(error, stackTrace, stopService: true);
                 return null;
               });
+              _playlistInitialized?.complete();
+              _playlistInitialized = null;
               if (lastIndex != 0 || lastPos > 0) {
                 await _player!
                     .seek(Duration(seconds: lastPos), index: lastIndex);
@@ -320,6 +330,8 @@ class AudioPlayerHandlerImpl extends BaseAudioHandler
                 _onError(error, stackTrace, stopService: true);
                 return null;
               });
+              _playlistInitialized?.complete();
+              _playlistInitialized = null;
             }
           }
         } else {
@@ -329,6 +341,8 @@ class AudioPlayerHandlerImpl extends BaseAudioHandler
             _onError(error, stackTrace, stopService: true);
             return null;
           });
+          _playlistInitialized?.complete();
+          _playlistInitialized = null;
         }
       } else {
         await _player!
@@ -337,6 +351,8 @@ class AudioPlayerHandlerImpl extends BaseAudioHandler
           _onError(error, stackTrace, stopService: true);
           return null;
         });
+        _playlistInitialized?.complete();
+        _playlistInitialized = null;
       }
     } catch (e) {
       Logger.root.severe('Error while loading last queue', e);
@@ -346,6 +362,8 @@ class AudioPlayerHandlerImpl extends BaseAudioHandler
         _onError(error, stackTrace, stopService: true);
         return null;
       });
+      _playlistInitialized?.complete();
+      _playlistInitialized = null;
     }
     if (!jobRunning) {
       refreshJob();
@@ -367,7 +385,42 @@ class AudioPlayerHandlerImpl extends BaseAudioHandler
     }
     final MediaItem newItem = MediaItemConverter.mapToMediaItem(newData);
 
-    addQueueItem(newItem);
+    // Mark the new URL as validated
+    final newUrl = newData['url']?.toString();
+    if (newUrl != null) {
+      _validatedUrls[newUrl] = DateTime.now();
+    }
+    
+    // Update current media item if it matches
+    final currentItem = mediaItem.value;
+    if (currentItem != null && currentItem.id == newItem.id) {
+      Logger.root.info('Updating current media item with refreshed URL');
+      currentItem.extras!['url'] = newItem.extras!['url'];
+      currentItem.extras!['expire_at'] = newItem.extras!['expire_at'];
+      
+      // Update the audio source if currently playing this item
+      final currentIndex = _player!.currentIndex;
+      if (currentIndex != null) {
+        try {
+          final newSource = _itemToSource(newItem);
+          if (newSource != null) {
+            await _playlist.removeAt(currentIndex);
+            await _playlist.insert(currentIndex, newSource);
+            _mediaItemExpando[newSource] = newItem;
+            
+            // Resume playback at current position
+            final currentPosition = _player!.position;
+            await _player!.seek(currentPosition, index: currentIndex);
+            Logger.root.info('Successfully updated current item with new URL');
+          }
+        } catch (e) {
+          Logger.root.severe('Error updating current item URL: $e');
+        }
+      }
+    } else {
+      // Add to queue if not current item
+      addQueueItem(newItem);
+    }
   }
 
   Map<String, String> _getAudioHeaders() {
@@ -429,24 +482,46 @@ class AudioPlayerHandlerImpl extends BaseAudioHandler
                       refreshJob();
                     }
                   } else {
+                    final cachedUrl = cachedData.last['url']?.toString();
+                    if (cachedUrl == null) {
+                      Logger.root.warning('Cached URL is null, refreshing');
+                      refreshLinks.add(mediaItem.id);
+                      if (!jobRunning) {
+                        refreshJob();
+                      }
+                      return null;
+                    }
+                    
+                    // Check if URL was recently validated (within last 5 minutes)
+                    final lastValidated = _validatedUrls[cachedUrl];
+                    final isValidated = lastValidated != null && 
+                        DateTime.now().difference(lastValidated).inMinutes < 5;
+                    
                     Logger.root.info(
-                      'youtube link found in cache for ${mediaItem.title}',
+                      'youtube link found in cache for ${mediaItem.title}${isValidated ? " (recently validated)" : ""}',
                     );
+                    
                     if (cacheSong) {
                       // Change this to handle yt quality
                       audioSource = LockCachingAudioSource(
-                        Uri.parse(cachedData.last['url'].toString()),
+                        Uri.parse(cachedUrl),
                         headers: headers,
                       );
                     } else {
                       // Change this to handle yt quality
                       audioSource = AudioSource.uri(
-                        Uri.parse(cachedData.last['url'].toString()),
+                        Uri.parse(cachedUrl),
                         headers: headers,
                       );
                     }
-                    mediaItem.extras!['url'] = cachedData.last['url'];
+                    mediaItem.extras!['url'] = cachedUrl;
                     _mediaItemExpando[audioSource] = mediaItem;
+                    
+                    // Mark as validated if not already
+                    if (!isValidated) {
+                      _validatedUrls[cachedUrl] = DateTime.now();
+                    }
+                    
                     return audioSource;
                   }
                 } else {
@@ -468,14 +543,27 @@ class AudioPlayerHandlerImpl extends BaseAudioHandler
                 }
               }
             } else {
+              final url = mediaItem.extras!['url']?.toString();
+              if (url == null) {
+                Logger.root.warning('URL is null for ${mediaItem.title}, refreshing');
+                refreshLinks.add(mediaItem.id);
+                if (!jobRunning) {
+                  refreshJob();
+                }
+                return null;
+              }
+              
+              // Mark URL as validated
+              _validatedUrls[url] = DateTime.now();
+              
               if (cacheSong) {
                 audioSource = LockCachingAudioSource(
-                  Uri.parse(mediaItem.extras!['url'].toString()),
+                  Uri.parse(url),
                   headers: headers,
                 );
               } else {
                 audioSource = AudioSource.uri(
-                  Uri.parse(mediaItem.extras!['url'].toString()),
+                  Uri.parse(url),
                   headers: headers,
                 );
               }
@@ -675,22 +763,88 @@ class AudioPlayerHandlerImpl extends BaseAudioHandler
 
   @override
   Future<void> addQueueItem(MediaItem mediaItem) async {
+    // Ensure playlist is initialized before adding items
+    if (_playlistInitialized != null && !_playlistInitialized!.isCompleted) {
+      await _playlistInitialized!.future;
+    }
     final res = _itemToSource(mediaItem);
     if (res != null) {
-      await _playlist.add(res);
+      try {
+        await _playlist.add(res);
+      } catch (e) {
+        Logger.root.severe('Error adding queue item: $e');
+        // If playlist is not initialized, initialize it now
+        if (_player != null) {
+          final completer = Completer<void>();
+          _playlistInitialized = completer;
+          await _player!.setAudioSource(_playlist, preload: false)
+              .onError((error, stackTrace) {
+            _onError(error, stackTrace, stopService: false);
+            return null;
+          });
+          completer.complete();
+          _playlistInitialized = null;
+          // Retry adding the item
+          await _playlist.add(res);
+        }
+      }
     }
   }
 
   @override
   Future<void> addQueueItems(List<MediaItem> mediaItems) async {
-    await _playlist.addAll(_itemsToSources(mediaItems));
+    // Ensure playlist is initialized before adding items
+    if (_playlistInitialized != null && !_playlistInitialized!.isCompleted) {
+      await _playlistInitialized!.future;
+    }
+    try {
+      await _playlist.addAll(_itemsToSources(mediaItems));
+    } catch (e) {
+      Logger.root.severe('Error adding queue items: $e');
+      // If playlist is not initialized, initialize it now
+      if (_player != null) {
+        final completer = Completer<void>();
+        _playlistInitialized = completer;
+        await _player!.setAudioSource(_playlist, preload: false)
+            .onError((error, stackTrace) {
+          _onError(error, stackTrace, stopService: false);
+          return null;
+        });
+        completer.complete();
+        _playlistInitialized = null;
+        // Retry adding the items
+        await _playlist.addAll(_itemsToSources(mediaItems));
+      }
+    }
   }
 
   @override
   Future<void> insertQueueItem(int index, MediaItem mediaItem) async {
+    // Ensure playlist is initialized before inserting items
+    if (_playlistInitialized != null && !_playlistInitialized!.isCompleted) {
+      await _playlistInitialized!.future;
+    }
     final res = _itemToSource(mediaItem);
     if (res != null) {
-      await _playlist.insert(index, res);
+      try {
+        await _playlist.insert(index, res);
+      } catch (e) {
+        Logger.root.severe('Error inserting queue item: $e');
+        // If playlist is not initialized, initialize it now
+        if (_player != null) {
+          final completer = Completer<void>();
+          _playlistInitialized = completer;
+          await _player!.setAudioSource(_playlist, preload: false)
+              .onError((error, stackTrace) {
+            _onError(error, stackTrace, stopService: false);
+            return null;
+          });
+          completer.complete();
+          _playlistInitialized = null;
+          // Retry inserting the item
+          await _playlist.insert(index, res);
+        }
+      }
     }
   }
 
@@ -982,7 +1136,103 @@ class AudioPlayerHandlerImpl extends BaseAudioHandler
     if (err is PlatformException &&
         err.code == 'abort' &&
         err.message == 'Connection aborted') return;
+    
+    // Handle 403 errors by refreshing the URL
+    if (err is PlatformException) {
+      final errorMessage = err.message?.toString().toLowerCase() ?? '';
+      if (errorMessage.contains('403') || 
+          errorMessage.contains('response code: 403') ||
+          errorMessage.contains('forbidden')) {
+        Logger.root.info('Detected 403 error, attempting to refresh URL');
+        _handle403Error();
+        return;
+      }
+    }
+    
     _onError(err, null);
+  }
+
+  Future<void> _handle403Error() async {
+    if (_isRefreshingUrl) {
+      Logger.root.info('URL refresh already in progress, skipping');
+      return;
+    }
+    
+    final currentItem = mediaItem.value;
+    if (currentItem == null) {
+      Logger.root.warning('No current media item to refresh');
+      return;
+    }
+    
+    // Skip if not a YouTube item or if it's a local file
+    if (currentItem.genre != 'YouTube' || 
+        currentItem.extras?['url']?.toString().startsWith('file:') == true) {
+      return;
+    }
+    
+    _isRefreshingUrl = true;
+    try {
+      Logger.root.info('Refreshing URL for: ${currentItem.title}');
+      
+      // Mark current URL as invalid
+      final currentUrl = currentItem.extras?['url']?.toString();
+      if (currentUrl != null) {
+        _validatedUrls.remove(currentUrl);
+      }
+      
+      // Refresh the link
+      refreshLinks.add(currentItem.id);
+      if (!jobRunning) {
+        refreshJob();
+      }
+      
+      // Wait a bit for the refresh to complete
+      await Future.delayed(const Duration(seconds: 2));
+      
+      // Try to get the refreshed URL from cache
+      if (Hive.box('ytlinkcache').containsKey(currentItem.id)) {
+        final cachedData = Hive.box('ytlinkcache').get(currentItem.id);
+        if (cachedData is List && cachedData.isNotEmpty) {
+          final newUrl = cachedData.last['url']?.toString();
+          if (newUrl != null && newUrl != currentUrl) {
+            Logger.root.info('Found refreshed URL, updating media item');
+            
+            // Update the media item with new URL
+            currentItem.extras!['url'] = newUrl;
+            currentItem.extras!['expire_at'] = cachedData.last['expireAt']?.toString() ?? 
+                (DateTime.now().millisecondsSinceEpoch ~/ 1000 + 3600).toString();
+            
+            // Mark new URL as validated
+            _validatedUrls[newUrl] = DateTime.now();
+            
+            // Get current index and replace the audio source
+            final currentIndex = _player!.currentIndex;
+            if (currentIndex != null) {
+              final newSource = _itemToSource(currentItem);
+              if (newSource != null) {
+                try {
+                  // Replace the current source
+                  await _playlist.removeAt(currentIndex);
+                  await _playlist.insert(currentIndex, newSource);
+                  
+                  // Seek to current position to resume playback
+                  final currentPosition = _player!.position;
+                  await _player!.seek(currentPosition, index: currentIndex);
+                  
+                  Logger.root.info('Successfully refreshed and updated URL');
+                } catch (e) {
+                  Logger.root.severe('Error replacing audio source: $e');
+                }
+              }
+            }
+          }
+        }
+      }
+    } catch (e) {
+      Logger.root.severe('Error handling 403: $e');
+    } finally {
+      _isRefreshingUrl = false;
+    }
   }
 
   void _onError(err, stacktrace, {bool stopService = false}) {
