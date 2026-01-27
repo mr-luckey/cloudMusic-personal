@@ -245,25 +245,51 @@ class PlayerInvoke {
   }) async {
     final List<MediaItem> queue = [];
     final Map playItem = response[index] as Map;
-    final Map? nextItem =
-        index == response.length - 1 ? null : response[index + 1] as Map;
+    final bool isYouTube = playItem['genre'] == 'YouTube';
+
+    // Refresh the clicked item's YouTube link if needed
     if (playItem['genre'] == 'YouTube') {
       await refreshYtLink(playItem);
     }
-    if (nextItem != null && nextItem['genre'] == 'YouTube') {
-      await refreshYtLink(nextItem);
-    }
 
-    queue.addAll(
-      response.map(
-        (song) => MediaItemConverter.mapToMediaItem(
-          song as Map,
-          autoplay: recommend,
+    // FOR YOUTUBE: Only add the clicked song (no queue, just the single song)
+    // This prevents wasteful processing of entire search results
+    // FOR OTHERS: Add the full queue as before
+    if (isYouTube) {
+      print('🎵 [YOUTUBE] Processing only clicked song: ${playItem['title']}');
+      print('   [YOUTUBE] Skipping queue to avoid wasteful URL conversions');
+
+      queue.add(
+        MediaItemConverter.mapToMediaItem(
+          playItem,
+          autoplay:
+              false, // Disable autoplay for YouTube to prevent queue building
           // playlistBox: playlistBox,
         ),
-      ),
-    );
-    await updateNplay(queue, index);
+      );
+    } else {
+      // Non-YouTube content: keep existing behavior with full queue
+      final Map? nextItem =
+          index == response.length - 1 ? null : response[index + 1] as Map;
+
+      if (nextItem != null && nextItem['genre'] == 'YouTube') {
+        await refreshYtLink(nextItem);
+      }
+
+      queue.addAll(
+        response.map(
+          (song) => MediaItemConverter.mapToMediaItem(
+            song as Map,
+            autoplay: recommend,
+            // playlistBox: playlistBox,
+          ),
+        ),
+      );
+    }
+
+    // For YouTube, index is always 0 since we only have one song in the queue
+    // For others, use the actual index
+    await updateNplay(queue, isYouTube ? 0 : index);
   }
 
   static Future<void> updateNplay(List<MediaItem> queue, int index) async {

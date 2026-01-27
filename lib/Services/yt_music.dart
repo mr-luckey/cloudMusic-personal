@@ -73,6 +73,7 @@ class YtMusicService {
   ) async {
     final Uri uri = Uri.https(url);
     print(uri);
+    print('checking headers............................');
     print(headers);
     print('checking api............................');
     final Response response = await get(uri, headers: headers);

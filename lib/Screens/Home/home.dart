@@ -57,14 +57,14 @@ class _HomePageState extends State<HomePage> {
     setState(() {});
   }
 
-  void _startAdTimer() {
-    _timer = Timer.periodic(Duration(seconds: 5), (Timer timer) {
-      print('i am loaded....................$_timer');
-      // AdManager.showInterstitialAd();
-      // print(
-      //     'i am loaded....................'); // Show the interstitial ad every 50 seconds
-    });
-  }
+  // void _startAdTimer() {
+  //   _timer = Timer.periodic(Duration(seconds: 5), (Timer timer) {
+  //     print('i am loaded....................$_timer');
+  //     // AdManager.showInterstitialAd();
+  //     // print(
+  //     //     'i am loaded....................'); // Show the interstitial ad every 50 seconds
+  //   });
+  // }
 
   void onItemTapped(int index) {
     _selectedIndex.value = index;
@@ -75,7 +75,7 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     // AdManager().initialize();
     // AdManager.showInterstitialAd();
-    _startAdTimer();
+    // _startAdTimer();
     super.initState();
 
     // checkVersion();

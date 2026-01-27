@@ -162,7 +162,6 @@ class NavClass {
       print(root);
       print("items");
       print(items);
-      print('ekjioejdiejdiejdoejfciejviejfcrf,,,,,,,,,,,,,,,,,,,,,,');
       var res = root;
       for (final item in items) {
         res = res[item];
