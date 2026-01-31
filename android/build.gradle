@@ -10,7 +10,7 @@ buildscript {
 
     dependencies {
         // classpath 'com.android.tools.build:gradle:3.4.2'
-       classpath 'com.android.tools.build:gradle:8.6.0'
+       classpath 'com.android.tools.build:gradle:8.9.1'
        classpath 'com.google.gms:google-services:4.4.2'
        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
     }
@@ -48,7 +48,7 @@ subprojects {
     afterEvaluate { project ->
         if (project.hasProperty("android")) {
             android {
-                compileSdkVersion 34
+                compileSdkVersion 36
             }
             // Configure Java compatibility
             if (project.hasProperty("java")) {
@@ -117,7 +117,7 @@ apply plugin:'kotlin-kapt'
 apply plugin: 'com.android.library'
 
 android {
-    compileSdkVersion 35
+    compileSdkVersion 36
     namespace 'com.appware.cloudSpot'
     defaultConfig {
          minSdkVersion 21

@@ -3,6 +3,7 @@ PODS:
     - Flutter
   - audio_service (0.0.1):
     - Flutter
+    - FlutterMacOS
   - audio_session (0.0.1):
     - Flutter
   - connectivity_plus (0.0.1):
@@ -10,100 +11,59 @@ PODS:
     - ReachabilitySwift
   - device_info_plus (0.0.1):
     - Flutter
-  - DKImagePickerController/Core (4.3.4):
+  - DKImagePickerController/Core (4.3.9):
     - DKImagePickerController/ImageDataManager
     - DKImagePickerController/Resource
-  - DKImagePickerController/ImageDataManager (4.3.4)
-  - DKImagePickerController/PhotoGallery (4.3.4):
+  - DKImagePickerController/ImageDataManager (4.3.9)
+  - DKImagePickerController/PhotoGallery (4.3.9):
     - DKImagePickerController/Core
     - DKPhotoGallery
-  - DKImagePickerController/Resource (4.3.4)
-  - DKPhotoGallery (0.0.17):
-    - DKPhotoGallery/Core (= 0.0.17)
-    - DKPhotoGallery/Model (= 0.0.17)
-    - DKPhotoGallery/Preview (= 0.0.17)
-    - DKPhotoGallery/Resource (= 0.0.17)
+  - DKImagePickerController/Resource (4.3.9)
+  - DKPhotoGallery (0.0.19):
+    - DKPhotoGallery/Core (= 0.0.19)
+    - DKPhotoGallery/Model (= 0.0.19)
+    - DKPhotoGallery/Preview (= 0.0.19)
+    - DKPhotoGallery/Resource (= 0.0.19)
     - SDWebImage
     - SwiftyGif
-  - DKPhotoGallery/Core (0.0.17):
+  - DKPhotoGallery/Core (0.0.19):
     - DKPhotoGallery/Model
     - DKPhotoGallery/Preview
     - SDWebImage
     - SwiftyGif
-  - DKPhotoGallery/Model (0.0.17):
+  - DKPhotoGallery/Model (0.0.19):
     - SDWebImage
     - SwiftyGif
-  - DKPhotoGallery/Preview (0.0.17):
+  - DKPhotoGallery/Preview (0.0.19):
     - DKPhotoGallery/Model
     - DKPhotoGallery/Resource
     - SDWebImage
     - SwiftyGif
-  - DKPhotoGallery/Resource (0.0.17):
+  - DKPhotoGallery/Resource (0.0.19):
     - SDWebImage
     - SwiftyGif
+  - facebook_audience_network (0.0.1):
+    - FBAudienceNetwork (~> 6.3)
+    - Flutter
+  - FBAudienceNetwork (6.21.0)
   - file_picker (0.0.1):
     - DKImagePickerController/PhotoGallery
     - Flutter
   - Flutter (1.0.0)
   - flutter_archive (0.0.1):
     - Flutter
-    - ZIPFoundation (= 0.9.13)
-  - FMDB (2.7.5):
-    - FMDB/standard (= 2.7.5)
-  - FMDB/standard (2.7.5)
-  - Google-Mobile-Ads-SDK (10.11.0):
-    - GoogleAppMeasurement (< 11.0, >= 7.0)
+    - ZIPFoundation (= 0.9.19)
+  - Google-Mobile-Ads-SDK (11.13.0):
     - GoogleUserMessagingPlatform (>= 1.1)
-  - google_mobile_ads (1.0.0):
+  - google_mobile_ads (5.3.1):
     - Flutter
-    - Google-Mobile-Ads-SDK (~> 10.11.0)
+    - Google-Mobile-Ads-SDK (~> 11.13.0)
     - webview_flutter_wkwebview
-  - GoogleAppMeasurement (10.21.0):
-    - GoogleAppMeasurement/AdIdSupport (= 10.21.0)
-    - GoogleUtilities/AppDelegateSwizzler (~> 7.11)
-    - GoogleUtilities/MethodSwizzler (~> 7.11)
-    - GoogleUtilities/Network (~> 7.11)
-    - "GoogleUtilities/NSData+zlib (~> 7.11)"
-    - nanopb (< 2.30910.0, >= 2.30908.0)
-  - GoogleAppMeasurement/AdIdSupport (10.21.0):
-    - GoogleAppMeasurement/WithoutAdIdSupport (= 10.21.0)
-    - GoogleUtilities/AppDelegateSwizzler (~> 7.11)
-    - GoogleUtilities/MethodSwizzler (~> 7.11)
-    - GoogleUtilities/Network (~> 7.11)
-    - "GoogleUtilities/NSData+zlib (~> 7.11)"
-    - nanopb (< 2.30910.0, >= 2.30908.0)
-  - GoogleAppMeasurement/WithoutAdIdSupport (10.21.0):
-    - GoogleUtilities/AppDelegateSwizzler (~> 7.11)
-    - GoogleUtilities/MethodSwizzler (~> 7.11)
-    - GoogleUtilities/Network (~> 7.11)
-    - "GoogleUtilities/NSData+zlib (~> 7.11)"
-    - nanopb (< 2.30910.0, >= 2.30908.0)
-  - GoogleUserMessagingPlatform (2.1.0)
-  - GoogleUtilities/AppDelegateSwizzler (7.12.0):
-    - GoogleUtilities/Environment
-    - GoogleUtilities/Logger
-    - GoogleUtilities/Network
-  - GoogleUtilities/Environment (7.12.0):
-    - PromisesObjC (< 3.0, >= 1.2)
-  - GoogleUtilities/Logger (7.12.0):
-    - GoogleUtilities/Environment
-  - GoogleUtilities/MethodSwizzler (7.12.0):
-    - GoogleUtilities/Logger
-  - GoogleUtilities/Network (7.12.0):
-    - GoogleUtilities/Logger
-    - "GoogleUtilities/NSData+zlib"
-    - GoogleUtilities/Reachability
-  - "GoogleUtilities/NSData+zlib (7.12.0)"
-  - GoogleUtilities/Reachability (7.12.0):
-    - GoogleUtilities/Logger
+  - GoogleUserMessagingPlatform (3.1.0)
   - just_audio (0.0.1):
     - Flutter
+    - FlutterMacOS
   - metadata_god (0.0.1)
-  - nanopb (2.30909.1):
-    - nanopb/decode (= 2.30909.1)
-    - nanopb/encode (= 2.30909.1)
-  - nanopb/decode (2.30909.1)
-  - nanopb/encode (2.30909.1)
   - on_audio_query_ios (0.0.1):
     - Flutter
     - SwiftyBeaver
@@ -112,39 +72,43 @@ PODS:
   - path_provider_foundation (0.0.1):
     - Flutter
     - FlutterMacOS
-  - permission_handler_apple (9.1.1):
+  - permission_handler_apple (9.3.0):
     - Flutter
-  - PromisesObjC (2.3.1)
-  - ReachabilitySwift (5.0.0)
-  - receive_sharing_intent (1.6.7):
+  - ReachabilitySwift (5.2.4)
+  - receive_sharing_intent (1.8.1):
     - Flutter
-  - SDWebImage (5.13.0):
-    - SDWebImage/Core (= 5.13.0)
-  - SDWebImage/Core (5.13.0)
+  - SDWebImage (5.21.5):
+    - SDWebImage/Core (= 5.21.5)
+  - SDWebImage/Core (5.21.5)
   - share_plus (0.0.1):
     - Flutter
-  - sqflite (0.0.3):
+  - shared_preferences_foundation (0.0.1):
     - Flutter
-    - FMDB (>= 2.7.5)
+    - FlutterMacOS
+  - sqflite_darwin (0.0.4):
+    - Flutter
+    - FlutterMacOS
   - SwiftyBeaver (1.9.5)
-  - SwiftyGif (5.4.3)
+  - SwiftyGif (5.4.5)
   - url_launcher_ios (0.0.1):
     - Flutter
   - webview_flutter_wkwebview (0.0.1):
     - Flutter
-  - ZIPFoundation (0.9.13)
+    - FlutterMacOS
+  - ZIPFoundation (0.9.19)
 
 DEPENDENCIES:
   - app_links (from `.symlinks/plugins/app_links/ios`)
-  - audio_service (from `.symlinks/plugins/audio_service/ios`)
+  - audio_service (from `.symlinks/plugins/audio_service/darwin`)
   - audio_session (from `.symlinks/plugins/audio_session/ios`)
   - connectivity_plus (from `.symlinks/plugins/connectivity_plus/ios`)
   - device_info_plus (from `.symlinks/plugins/device_info_plus/ios`)
+  - facebook_audience_network (from `.symlinks/plugins/facebook_audience_network/ios`)
   - file_picker (from `.symlinks/plugins/file_picker/ios`)
   - Flutter (from `Flutter`)
   - flutter_archive (from `.symlinks/plugins/flutter_archive/ios`)
   - google_mobile_ads (from `.symlinks/plugins/google_mobile_ads/ios`)
-  - just_audio (from `.symlinks/plugins/just_audio/ios`)
+  - just_audio (from `.symlinks/plugins/just_audio/darwin`)
   - metadata_god (from `.symlinks/plugins/metadata_god/ios`)
   - on_audio_query_ios (from `.symlinks/plugins/on_audio_query_ios/ios`)
   - package_info_plus (from `.symlinks/plugins/package_info_plus/ios`)
@@ -152,21 +116,18 @@ DEPENDENCIES:
   - permission_handler_apple (from `.symlinks/plugins/permission_handler_apple/ios`)
   - receive_sharing_intent (from `.symlinks/plugins/receive_sharing_intent/ios`)
   - share_plus (from `.symlinks/plugins/share_plus/ios`)
-  - sqflite (from `.symlinks/plugins/sqflite/ios`)
+  - shared_preferences_foundation (from `.symlinks/plugins/shared_preferences_foundation/darwin`)
+  - sqflite_darwin (from `.symlinks/plugins/sqflite_darwin/darwin`)
   - url_launcher_ios (from `.symlinks/plugins/url_launcher_ios/ios`)
-  - webview_flutter_wkwebview (from `.symlinks/plugins/webview_flutter_wkwebview/ios`)
+  - webview_flutter_wkwebview (from `.symlinks/plugins/webview_flutter_wkwebview/darwin`)
 
 SPEC REPOS:
   trunk:
     - DKImagePickerController
     - DKPhotoGallery
-    - FMDB
+    - FBAudienceNetwork
     - Google-Mobile-Ads-SDK
-    - GoogleAppMeasurement
     - GoogleUserMessagingPlatform
-    - GoogleUtilities
-    - nanopb
-    - PromisesObjC
     - ReachabilitySwift
     - SDWebImage
     - SwiftyBeaver
@@ -177,13 +138,15 @@ EXTERNAL SOURCES:
   app_links:
     :path: ".symlinks/plugins/app_links/ios"
   audio_service:
-    :path: ".symlinks/plugins/audio_service/ios"
+    :path: ".symlinks/plugins/audio_service/darwin"
   audio_session:
     :path: ".symlinks/plugins/audio_session/ios"
   connectivity_plus:
     :path: ".symlinks/plugins/connectivity_plus/ios"
   device_info_plus:
     :path: ".symlinks/plugins/device_info_plus/ios"
+  facebook_audience_network:
+    :path: ".symlinks/plugins/facebook_audience_network/ios"
   file_picker:
     :path: ".symlinks/plugins/file_picker/ios"
   Flutter:
@@ -193,7 +156,7 @@ EXTERNAL SOURCES:
   google_mobile_ads:
     :path: ".symlinks/plugins/google_mobile_ads/ios"
   just_audio:
-    :path: ".symlinks/plugins/just_audio/ios"
+    :path: ".symlinks/plugins/just_audio/darwin"
   metadata_god:
     :path: ".symlinks/plugins/metadata_god/ios"
   on_audio_query_ios:
@@ -208,49 +171,49 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/receive_sharing_intent/ios"
   share_plus:
     :path: ".symlinks/plugins/share_plus/ios"
-  sqflite:
-    :path: ".symlinks/plugins/sqflite/ios"
+  shared_preferences_foundation:
+    :path: ".symlinks/plugins/shared_preferences_foundation/darwin"
+  sqflite_darwin:
+    :path: ".symlinks/plugins/sqflite_darwin/darwin"
   url_launcher_ios:
     :path: ".symlinks/plugins/url_launcher_ios/ios"
   webview_flutter_wkwebview:
-    :path: ".symlinks/plugins/webview_flutter_wkwebview/ios"
+    :path: ".symlinks/plugins/webview_flutter_wkwebview/darwin"
 
 SPEC CHECKSUMS:
-  app_links: 5ef33d0d295a89d9d16bb81b0e3b0d5f70d6c875
-  audio_service: f509d65da41b9521a61f1c404dd58651f265a567
-  audio_session: 4f3e461722055d21515cf3261b64c973c062f345
-  connectivity_plus: bf0076dd84a130856aa636df1c71ccaff908fa1d
-  device_info_plus: c6fb39579d0f423935b0c9ce7ee2f44b71b9fce6
-  DKImagePickerController: b512c28220a2b8ac7419f21c491fc8534b7601ac
-  DKPhotoGallery: fdfad5125a9fdda9cc57df834d49df790dbb4179
-  file_picker: 15fd9539e4eb735dc54bae8c0534a7a9511a03de
-  Flutter: f04841e97a9d0b0a8025694d0796dd46242b2854
-  flutter_archive: 1805fdd3a695fd284b43edb53dc35ca843fb761c
-  FMDB: 2ce00b547f966261cd18927a3ddb07cb6f3db82a
-  Google-Mobile-Ads-SDK: 58b4fda3f9758fc1ed210aa5cf7777b5eb55d47e
-  google_mobile_ads: 511febb4768edc860ee455a9e201ff52de385908
-  GoogleAppMeasurement: a65314d316443969ed3d3709b3a187448ed6418f
-  GoogleUserMessagingPlatform: dce302b8f1b84d6e945812ee7a15c3f65a102cbf
-  GoogleUtilities: 0759d1a57ebb953965c2dfe0ba4c82e95ccc2e34
-  just_audio: baa7252489dbcf47a4c7cc9ca663e9661c99aafa
+  app_links: c5161ac5ab5383ad046884568b4b91cb52df5d91
+  audio_service: aa99a6ba2ae7565996015322b0bb024e1d25c6fd
+  audio_session: 9bb7f6c970f21241b19f5a3658097ae459681ba0
+  connectivity_plus: 481668c94744c30c53b8895afb39159d1e619bdf
+  device_info_plus: 71ffc6ab7634ade6267c7a93088ed7e4f74e5896
+  DKImagePickerController: 946cec48c7873164274ecc4624d19e3da4c1ef3c
+  DKPhotoGallery: b3834fecb755ee09a593d7c9e389d8b5d6deed60
+  facebook_audience_network: ca776d93385735b6ed38720a7b38f72f74ed117b
+  FBAudienceNetwork: f4ab9e073ab98c884dbdb5ffe7c861272b380bc2
+  file_picker: a0560bc09d61de87f12d246fc47d2119e6ef37be
+  Flutter: cabc95a1d2626b1b06e7179b784ebcf0c0cde467
+  flutter_archive: ad8edfd7f7d1bb12058d05424ba93e27d9930efe
+  Google-Mobile-Ads-SDK: 14f57f2dc33532a24db288897e26494640810407
+  google_mobile_ads: 16ad301354fa6a7ea55770c6254bd4339bf8558b
+  GoogleUserMessagingPlatform: befe603da6501006420c206222acd449bba45a9c
+  just_audio: 4e391f57b79cad2b0674030a00453ca5ce817eed
   metadata_god: eceae399d0020475069a5cebc35943ce8562b5d7
-  nanopb: d4d75c12cd1316f4a64e3c6963f879ecd4b5e0d5
-  on_audio_query_ios: e5afb0d4b42cfa3e8762d8ec1953540cb4f02100
-  package_info_plus: 115f4ad11e0698c8c1c5d8a689390df880f47e85
-  path_provider_foundation: 3784922295ac71e43754bd15e0653ccfd36a147c
-  permission_handler_apple: e76247795d700c14ea09e3a2d8855d41ee80a2e6
-  PromisesObjC: c50d2056b5253dadbd6c2bea79b0674bd5a52fa4
-  ReachabilitySwift: 985039c6f7b23a1da463388634119492ff86c825
-  receive_sharing_intent: 9ca20ae908f83c36ddaaaa8c9bd30ce4700495e8
-  SDWebImage: 0327043dbb9533e75f2eff8445b3df0f2ceca6ac
-  share_plus: c3fef564749587fc939ef86ffb283ceac0baf9f5
-  sqflite: 31f7eba61e3074736dff8807a9b41581e4f7f15a
+  on_audio_query_ios: 28a780e2d0d85d92d500ba6e12c6c8167022b2fa
+  package_info_plus: af8e2ca6888548050f16fa2f1938db7b5a5df499
+  path_provider_foundation: bb55f6dbba17d0dccd6737fe6f7f34fbd0376880
+  permission_handler_apple: 4ed2196e43d0651e8ff7ca3483a069d469701f2d
+  ReachabilitySwift: 32793e867593cfc1177f5d16491e3a197d2fccda
+  receive_sharing_intent: 222384f00ffe7e952bbfabaa9e3967cb87e5fe00
+  SDWebImage: e9c98383c7572d713c1a0d7dd2783b10599b9838
+  share_plus: 011d6fb4f9d2576b83179a3a5c5e323202cdabcf
+  shared_preferences_foundation: 7036424c3d8ec98dfe75ff1667cb0cd531ec82bb
+  sqflite_darwin: 20b2a3a3b70e43edae938624ce550a3cbf66a3d0
   SwiftyBeaver: 84069991dd5dca07d7069100985badaca7f0ce82
-  SwiftyGif: 6c3eafd0ce693cad58bb63d2b2fb9bacb8552780
-  url_launcher_ios: bbd758c6e7f9fd7b5b1d4cde34d2b95fcce5e812
-  webview_flutter_wkwebview: 4f3e50f7273d31e5500066ed267e3ae4309c5ae4
-  ZIPFoundation: ae5b4b813d216d3bf0a148773267fff14bd51d37
+  SwiftyGif: 706c60cf65fa2bc5ee0313beece843c8eb8194d4
+  url_launcher_ios: 7a95fa5b60cc718a708b8f2966718e93db0cef1b
+  webview_flutter_wkwebview: 8ebf4fded22593026f7dbff1fbff31ea98573c8d
+  ZIPFoundation: b8c29ea7ae353b309bc810586181fd073cb3312c
 
-PODFILE CHECKSUM: a8fdda13e46e7714175a31920f11b7da1a162f85
+PODFILE CHECKSUM: ffec53d369369419a709d1fcaf4f16b42d287b56
 
-COCOAPODS: 1.14.3
+COCOAPODS: 1.16.2

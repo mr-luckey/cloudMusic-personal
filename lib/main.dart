@@ -33,7 +33,7 @@ import 'package:sizer/sizer.dart' show SizerUtil;
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  MobileAds.instance.initialize();
+  // MobileAds.instance.initialize();
   // AdManager().initialize();
   if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
     await Hive.initFlutter('BlackHole/Database');

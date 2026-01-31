@@ -58,10 +58,10 @@ class FormatResponse {
   }
 
   static Future<Map> formatSingleSongResponse(Map response) async {
-    // Map cachedSong = Hive.box('cache').get(response['id']);
-    // if (cachedSong != null) {
-    //   return cachedSong;
-    // }
+    dynamic cachedSong = Hive.box('cache').get(response['id']);
+    if (cachedSong != null) {
+      return cachedSong as Map;
+    }
     try {
       final List artistNames = [];
       if (response['more_info']?['artistMap'] == false ||

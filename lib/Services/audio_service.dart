@@ -257,21 +257,31 @@ class AudioPlayerHandlerImpl extends BaseAudioHandler
       }
 
       if (item.artUri.toString().startsWith('http')) {
-        addRecentlyPlayed(item);
-        _recentSubject.add([item]);
+        // addRecentlyPlayed(item);
 
-        if (recommend && item.extras!['autoplay'] as bool) {
+        // _recentSubject.add([item]);
+        print('Added ${item.title} to recent songs');
+        print('Duration: ${item.duration}');
+        print('Extras: ${item.extras.toString()}');
+// print(object)
+        if (item.extras!['autoplay'] == false) {
+          print("checking controll     1");
           final List<MediaItem> mediaQueue = queue.value;
+          print('checking controll     2');
           final int index = mediaQueue.indexOf(item);
+          print('checking controll     3');
           final int queueLength = mediaQueue.length;
-          if (queueLength - index < 5) {
+          print('checking controll     4');
+          if (queueLength - index < 2) {
             Logger.root.info('less than 5 songs remaining, adding more songs');
-            Future.delayed(const Duration(seconds: 80), () async {
+            Future.delayed(Duration(seconds: 1), () async {
               print('i am loaded....................test 11');
               if (item == mediaItem.value) {
                 print('i am loaded....................test 22');
-                if (item.genre != 'YouTube') {
+                print(item.genre);
+                if (item.genre == 'YouTube') {
                   print('i am loaded....................test 33');
+
                   final List value = await SaavnAPI().getReco(item.id);
                   print('i am loaded....................test 44');
                   value.shuffle();
@@ -710,6 +720,8 @@ class AudioPlayerHandlerImpl extends BaseAudioHandler
                 _mediaItemExpando[audioSource] = mediaItem;
                 print(
                     '✅ [STREAM] Audio source created successfully (Direct Stream)!');
+                print(audioSource);
+                print(audioSource.toString());
                 return audioSource;
               } catch (e) {
                 print('❌ [STREAM] Error creating audio source: $e');
@@ -911,44 +923,44 @@ class AudioPlayerHandlerImpl extends BaseAudioHandler
     print('   - prioritizeTimeOverSizeThresholds: true');
   }
 
-  Future<void> addRecentlyPlayed(MediaItem mediaitem) async {
-    Logger.root.info('adding ${mediaitem.id} to recently played');
-    List recentList = await Hive.box('cache')
-        .get('recentSongs', defaultValue: [])?.toList() as List;
+  // Future<void> addRecentlyPlayed(MediaItem mediaitem) async {
+  //   Logger.root.info('adding ${mediaitem.id} to recently played');
+  //   List recentList = await Hive.box('cache')
+  //       .get('recentSongs', defaultValue: [])?.toList() as List;
 
-    final Map songStats =
-        await Hive.box('stats').get(mediaitem.id, defaultValue: {}) as Map;
+  //   final Map songStats =
+  //       await Hive.box('stats').get(mediaitem.id, defaultValue: {}) as Map;
 
-    final Map mostPlayed =
-        await Hive.box('stats').get('mostPlayed', defaultValue: {}) as Map;
+  //   final Map mostPlayed =
+  //       await Hive.box('stats').get('mostPlayed', defaultValue: {}) as Map;
 
-    songStats['lastPlayed'] = DateTime.now().millisecondsSinceEpoch;
-    songStats['playCount'] =
-        songStats['playCount'] == null ? 1 : songStats['playCount'] + 1;
-    songStats['isYoutube'] = mediaitem.genre == 'YouTube';
-    songStats['title'] = mediaitem.title;
-    songStats['artist'] = mediaitem.artist;
-    songStats['album'] = mediaitem.album;
-    songStats['id'] = mediaitem.id;
-    Hive.box('stats').put(mediaitem.id, songStats);
-    if ((songStats['playCount'] as int) >
-        (mostPlayed['playCount'] as int? ?? 0)) {
-      Hive.box('stats').put('mostPlayed', songStats);
-    }
-    Logger.root.info('adding ${mediaitem.id} data to stats');
+  //   songStats['lastPlayed'] = DateTime.now().millisecondsSinceEpoch;
+  //   songStats['playCount'] =
+  //       songStats['playCount'] == null ? 1 : songStats['playCount'] + 1;
+  //   songStats['isYoutube'] = mediaitem.genre == 'YouTube';
+  //   songStats['title'] = mediaitem.title;
+  //   songStats['artist'] = mediaitem.artist;
+  //   songStats['album'] = mediaitem.album;
+  //   songStats['id'] = mediaitem.id;
+  //   Hive.box('stats').put(mediaitem.id, songStats);
+  //   if ((songStats['playCount'] as int) >
+  //       (mostPlayed['playCount'] as int? ?? 0)) {
+  //     Hive.box('stats').put('mostPlayed', songStats);
+  //   }
+  //   Logger.root.info('adding ${mediaitem.id} data to stats');
 
-    final Map item = MediaItemConverter.mediaItemToMap(mediaitem);
-    recentList.insert(0, item);
+  //   final Map item = MediaItemConverter.mediaItemToMap(mediaitem);
+  //   recentList.insert(0, item);
 
-    final jsonList = recentList.map((item) => jsonEncode(item)).toList();
-    final uniqueJsonList = jsonList.toSet().toList();
-    recentList = uniqueJsonList.map((item) => jsonDecode(item)).toList();
+  //   final jsonList = recentList.map((item) => jsonEncode(item)).toList();
+  //   final uniqueJsonList = jsonList.toSet().toList();
+  //   recentList = uniqueJsonList.map((item) => jsonDecode(item)).toList();
 
-    if (recentList.length > 30) {
-      recentList = recentList.sublist(0, 30);
-    }
-    Hive.box('cache').put('recentSongs', recentList);
-  }
+  //   if (recentList.length > 30) {
+  //     recentList = recentList.sublist(0, 30);
+  //   }
+  //   Hive.box('cache').put('recentSongs', recentList);
+  // }
 
   Future<void> addLastQueue(List<MediaItem> queue) async {
     if (queue.isNotEmpty && queue.first.genre != 'YouTube') {
@@ -1278,7 +1290,7 @@ class AudioPlayerHandlerImpl extends BaseAudioHandler
     }
 
     if (name == 'skipToMediaItem') {
-      skipToMediaItem(extras!['id'] as String?, extras['index'] as int?);
+      skipToMediaItem(extras?['id'] as String?, extras?['index'] as int?);
     }
     return super.customAction(name, extras);
   }
@@ -1532,14 +1544,14 @@ class AudioPlayerHandlerImpl extends BaseAudioHandler
                         '🔄 [403 HANDLER] Replacing audio source at index $currentIndex');
 
                     // Save current position before replacing
-                    final currentPosition = _player!.position;
+                    // final currentPosition = _player!.position;
 
                     // Replace the current source
-                    await _playlist.removeAt(currentIndex);
+
                     await _playlist.insert(currentIndex, newSource);
 
                     // Seek to current position and resume playback
-                    await _player!.seek(currentPosition, index: currentIndex);
+                    // await _player!.seek(currentPosition, index: currentIndex);
 
                     // Auto-play if we were playing before
                     if (playbackState.value.playing) {

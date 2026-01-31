@@ -34,7 +34,7 @@ if (flutterVersionName == null) {
 
 
 android {
-    compileSdkVersion 35
+    compileSdkVersion 36
     ndkVersion "27.0.12077973"
     buildToolsVersion "30.0.3"
     namespace 'com.appware.cloudSpot'
