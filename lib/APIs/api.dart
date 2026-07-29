@@ -11,8 +11,8 @@ class SaavnAPI {
   List preferredLanguages = Hive.box('settings')
       .get('preferredLanguage', defaultValue: ['Hindi']) as List;
   Map<String, String> headers = {};
-  String baseUrl = 'www.jiosaavn.com';
-  String apiStr = '/api.php?_format=json&_marker=0&api_version=4&ctx=web6dot0';
+  String baseUrl = 'https://saavn.me/song?';
+  // String apiStr = '/api.php?_format=json&_marker=0&api_version=4&ctx=web6dot0';
   Box settingsBox = Hive.box('settings');
   Map<String, String> endpoints = {
     'homeData': '__call=webapi.getLaunchData',
@@ -41,35 +41,36 @@ class SaavnAPI {
     bool useProxy = true,
   }) async {
     Uri url;
-    if (!usev4) {
-      url = Uri.https(
-        baseUrl,
-        '$apiStr&$params'.replaceAll('&api_version=4', ''),
-      );
-    } else {
-      url = Uri.https(baseUrl, '$apiStr&$params');
-    }
+    // if (!usev4) {
+    //   url = Uri.https(
+    //     baseUrl,
+    //     // '$apiStr&$params'.replaceAll('&api_version=4', ''),
+    //   );
+    // } else {
+    //   // url = Uri.https(baseUrl, '$apiStr&$params');
+    // }
     preferredLanguages =
         preferredLanguages.map((lang) => lang.toLowerCase()).toList();
     final String languageHeader = 'L=${preferredLanguages.join('%2C')}';
     headers = {'cookie': languageHeader, 'Accept': '*/*'};
 
-    if (useProxy && settingsBox.get('useProxy', defaultValue: false) as bool) {
-      final String proxyIP =
-          settingsBox.get('proxyIp', defaultValue: '103.47.67.134').toString();
-      final proxyHeaders = headers;
-      proxyHeaders['X-FORWARDED-FOR'] = proxyIP;
-      return get(url, headers: proxyHeaders).onError((error, stackTrace) {
-        return Response(
-          {
-            'status': 'failure',
-            'error': error.toString(),
-          }.toString(),
-          404,
-        );
-      });
-    }
-    return get(url, headers: headers).onError((error, stackTrace) {
+    // if (useProxy && settingsBox.get('useProxy', defaultValue: false) as bool) {
+    //   final String proxyIP =
+    //       settingsBox.get('proxyIp', defaultValue: '103.47.67.134').toString();
+    //   final proxyHeaders = headers;
+    //   proxyHeaders['X-FORWARDED-FOR'] = proxyIP;
+    //   return get(url, headers: proxyHeaders).onError((error, stackTrace) {
+    //     return Response(
+    //       {
+    //         'status': 'failure',
+    //         'error': error.toString(),
+    //       }.toString(),
+    //       404,
+    //     );
+    //   });
+    // }
+    return get(Uri.parse(baseUrl), headers: headers)
+        .onError((error, stackTrace) {
       return Response(
         {
           'status': 'failure',
@@ -179,7 +180,10 @@ class SaavnAPI {
   }
 
   Future<List> getReco(String pid) async {
-    final String params = "${endpoints['getReco']}&pid=$pid";
+    final String params = "${baseUrl}?id=$pid";
+    print(
+        "Finally i found the final call for fetching song from the JIO savvan server...........................{$params}");
+
     final res = await getResponse(params);
     if (res.statusCode == 200 && res.body.isNotEmpty) {
       final List getMain = json.decode(res.body) as List;

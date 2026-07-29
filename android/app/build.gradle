@@ -34,7 +34,7 @@ if (flutterVersionName == null) {
 
 
 android {
-    compileSdkVersion 35
+    compileSdkVersion 36
     ndkVersion "27.0.12077973"
     buildToolsVersion "30.0.3"
     namespace 'com.appware.cloudSpot'
@@ -46,7 +46,7 @@ android {
     defaultConfig {
         applicationId "com.appware.cloudSpot"
         minSdkVersion flutter.minSdkVersion
-        targetSdkVersion 35
+        targetSdkVersion 36
         multiDexEnabled true
         // viewBinding true
         versionCode flutterVersionCode.toInteger()
