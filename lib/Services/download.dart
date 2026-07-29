@@ -108,9 +108,22 @@ class Download with ChangeNotifier {
     _lastLoggedPercent = -1;
     _streamSubscription = null;
     _httpClient = null;
+    // Remove partial files so next attempt is not blocked by "already exists".
+    final partialAudio = _activeFilepath;
+    final partialImage = _activeImagePath;
     _activeFilepath = null;
     _activeImagePath = null;
     notifyListeners();
+    if (partialAudio != null) {
+      try {
+        File(partialAudio).deleteSync();
+      } catch (_) {}
+    }
+    if (partialImage != null) {
+      try {
+        File(partialImage).deleteSync();
+      } catch (_) {}
+    }
   }
 
   bool _isStale(int generation) =>
@@ -143,30 +156,49 @@ class Download with ChangeNotifier {
       };
 
   Future<String> _resolveDownloadPath(String preferredPath) async {
-    if (preferredPath.isNotEmpty) {
+    Future<bool> canWrite(String path) async {
       try {
-        final dir = Directory(preferredPath);
+        final dir = Directory(path);
         if (!await dir.exists()) {
           await dir.create(recursive: true);
         }
-        // Verify write access with a tiny probe file.
-        final probe = File('${dir.path}/.cloudspot_write_test');
-        await probe.writeAsString('ok');
-        await probe.delete();
-        return preferredPath;
-      } catch (e) {
-        Logger.root.warning(
-          'Download path not writable ($preferredPath), falling back: $e',
+        final probe = File(
+          '${dir.path}/.cloudspot_write_test_${DateTime.now().millisecondsSinceEpoch}',
         );
+        await probe.writeAsString('ok', flush: true);
+        await probe.delete();
+        return true;
+      } catch (e) {
+        Logger.root.warning('Cannot write to $path: $e');
+        return false;
       }
     }
+
+    if (preferredPath.isNotEmpty && await canWrite(preferredPath)) {
+      return preferredPath;
+    }
+    if (preferredPath.isNotEmpty) {
+      Logger.root.warning(
+        'Download path not writable ($preferredPath), falling back',
+      );
+    }
+
+    // Prefer public Music folder when possible.
+    try {
+      const publicMusic = '/storage/emulated/0/Music';
+      if (await canWrite(publicMusic)) {
+        await Hive.box('settings').put('downloadPath', publicMusic);
+        return publicMusic;
+      }
+    } catch (_) {}
+
     final Directory docsDir = await getApplicationDocumentsDirectory();
     final fallback = '${docsDir.path}/Music';
-    final fallbackDir = Directory(fallback);
-    if (!await fallbackDir.exists()) {
-      await fallbackDir.create(recursive: true);
+    if (!await canWrite(fallback)) {
+      await Directory(fallback).create(recursive: true);
     }
     await Hive.box('settings').put('downloadPath', fallback);
+    print('⬇️ Using fallback download path: $fallback');
     return fallback;
   }
 
@@ -214,6 +246,7 @@ class Download with ChangeNotifier {
     bool createFolder = false,
     String? folderName,
   }) async {
+    print('⬇️ Preparing download for ${data['title']} (${data['id']})');
     Logger.root.info('Preparing download for ${data['title']}');
     final generation = ++_downloadGeneration;
     download = true;
@@ -310,8 +343,18 @@ class Download with ChangeNotifier {
       return;
     }
 
-    final bool exists = await File('$dlPath/$filename').exists();
-    if (exists) {
+    final targetFile = File('$dlPath/$filename');
+    final bool exists = await targetFile.exists();
+    // Ignore leftover empty/partial files from a previous failed attempt.
+    final bool realExists =
+        exists && (await targetFile.length()) > 1024;
+    if (exists && !realExists) {
+      print('⬇️ Removing leftover empty/partial file: $dlPath/$filename');
+      try {
+        await targetFile.delete();
+      } catch (_) {}
+    }
+    if (realExists) {
       Logger.root.info('File already exists');
       if (remember.value == true && rememberOption != null) {
         switch (rememberOption) {
@@ -599,69 +642,101 @@ class Download with ChangeNotifier {
         );
       }
 
+      if (kUrl.isEmpty && !isYouTube) {
+        throw Exception('Download URL is empty for ${data['id']}');
+      }
+
       int total = 0;
       int recieved = 0;
-      Stream<List<int>> stream;
-      // Download from yt — prefer existing stream URL (play screen already has
-      // one) so we don't hit YouTube rate-limits via getStreamInfo again.
+      late Stream<List<int>> stream;
+
       if (isYouTube) {
-        Stream<List<int>>? ytStream;
-        if (_isDirectStreamUrl(kUrl)) {
-          try {
-            Logger.root.info(
-              'YouTube download using current stream URL for ${data['id']}',
-            );
-            _httpClient = Client();
-            final request = Request('GET', Uri.parse(kUrl));
-            request.headers.addAll(_youtubeHeaders());
-            final response = await _httpClient!.send(request);
-            if (_isStale(activeGeneration)) {
-              _httpClient?.close();
-              _httpClient = null;
-              await _resetAfterCancel();
-              return;
-            }
-            if (response.statusCode >= 200 && response.statusCode < 300) {
-              total = response.contentLength ?? 0;
-              ytStream = response.stream;
-            } else {
-              Logger.root.warning(
-                'Direct YT URL returned ${response.statusCode}, falling back to getStreamInfo',
-              );
-              _httpClient?.close();
-              _httpClient = null;
-            }
-          } catch (e) {
-            Logger.root.warning(
-              'Direct YT URL download failed, falling back to getStreamInfo: $e',
-            );
-            _httpClient?.close();
-            _httpClient = null;
-          }
+        // Original working path: youtube_explode stream (not raw HTTP on
+        // googlevideo URL — that often 403s while the song is playing).
+        print('⬇️ [YT] Fetching stream info for ${data['id']}...');
+        Logger.root.info('Fetching YouTube stream info for ${data['id']}');
+        List<AudioOnlyStreamInfo> streamInfos = [];
+        try {
+          streamInfos = await YouTubeServices.instance
+              .getStreamInfo(data['id'].toString());
+        } catch (e) {
+          print('❌ [YT] getStreamInfo error: $e');
+          Logger.root.warning('getStreamInfo failed: $e');
         }
 
-        if (ytStream == null) {
-          final streamInfos = await YouTubeServices.instance
-              .getStreamInfo(data['id'].toString());
-          if (_isStale(activeGeneration)) {
-            await _resetAfterCancel();
-            return;
-          }
-          if (streamInfos.isEmpty) {
-            throw Exception('No stream available for ${data['id']}');
-          }
+        if (_isStale(activeGeneration)) {
+          await _resetAfterCancel();
+          return;
+        }
+
+        if (streamInfos.isNotEmpty) {
           final AudioOnlyStreamInfo streamInfo =
               preferredYtDownloadQuality == 'Low'
                   ? streamInfos.first
                   : streamInfos.last;
           total = streamInfo.size.totalBytes;
+          print(
+            '⬇️ [YT] Stream ready: ${_formatBytes(total)} '
+            '(${streamInfos.length} qualities)',
+          );
           Logger.root.info(
             'YouTube stream size for ${data['id']}: $total bytes',
           );
-          ytStream = YouTubeServices.instance.getStreamClient(streamInfo);
+          // Dedicated client — shared yt instance is busy with playback.
+          final downloadYt = YoutubeExplode();
+          stream = downloadYt.videos.streamsClient.get(streamInfo);
+        } else {
+          // getStreamInfo empty (often rate-limit while playing).
+          // Refresh a direct media URL and download over HTTP.
+          if (!_isDirectStreamUrl(kUrl)) {
+            print('⬇️ [YT] Refreshing link for ${data['id']}...');
+            try {
+              final fresh = await YouTubeServices.instance
+                  .refreshLink(data['id'].toString());
+              final freshUrl = fresh?['url']?.toString() ?? '';
+              if (freshUrl.isNotEmpty) {
+                kUrl = freshUrl;
+                print('⬇️ [YT] Got refreshed URL');
+              }
+            } catch (e) {
+              print('❌ [YT] refreshLink failed: $e');
+            }
+          }
+
+          if (!_isDirectStreamUrl(kUrl)) {
+            throw Exception(
+              'No YouTube stream available for ${data['id']} '
+              '(rate-limit or missing URL)',
+            );
+          }
+
+          print('⬇️ [YT] HTTP fallback download...');
+          Logger.root.info(
+            'YouTube falling back to HTTP URL for ${data['id']}',
+          );
+          _httpClient = Client();
+          final request = Request('GET', Uri.parse(kUrl));
+          request.headers.addAll(_youtubeHeaders());
+          final response = await _httpClient!.send(request);
+          if (_isStale(activeGeneration)) {
+            _httpClient?.close();
+            _httpClient = null;
+            await _resetAfterCancel();
+            return;
+          }
+          if (response.statusCode < 200 || response.statusCode >= 300) {
+            final code = response.statusCode;
+            _httpClient?.close();
+            _httpClient = null;
+            throw Exception(
+              'YouTube direct URL HTTP $code for ${data['id']}',
+            );
+          }
+          total = response.contentLength ?? 0;
+          stream = response.stream;
         }
-        stream = ytStream;
       } else {
+        print('⬇️ [HTTP] Connecting for ${data['id']}...');
         Logger.root.info('Connecting to Client');
         _httpClient = Client();
         final response =
@@ -672,7 +747,15 @@ class Download with ChangeNotifier {
           await _resetAfterCancel();
           return;
         }
+        if (response.statusCode < 200 || response.statusCode >= 300) {
+          _httpClient?.close();
+          _httpClient = null;
+          throw Exception(
+            'HTTP ${response.statusCode} downloading ${data['id']}',
+          );
+        }
         total = response.contentLength ?? 0;
+        print('⬇️ [HTTP] Size: ${_formatBytes(total)}');
         Logger.root.info(
           'HTTP download size for ${data['id']}: $total bytes',
         );
@@ -708,6 +791,9 @@ class Download with ChangeNotifier {
             return;
           }
           try {
+            if (recieved <= 0) {
+              throw Exception('Downloaded 0 bytes for ${data['id']}');
+            }
             final doneMsg =
                 '✅ Download complete [$id]: ${_formatBytes(recieved)}'
                 '${total > 0 ? ' / ${_formatBytes(total)}' : ''} — saving file...';
@@ -813,6 +899,7 @@ class Download with ChangeNotifier {
         },
         onError: (Object e, StackTrace stackTrace) async {
           if (activeGeneration != _downloadGeneration) return;
+          print('❌ Download stream error [$id]: $e');
           Logger.root.severe('Error in download stream: $e', e, stackTrace);
           await _resetAfterCancel();
         },
@@ -820,6 +907,7 @@ class Download with ChangeNotifier {
       );
     } catch (e, stackTrace) {
       if (activeGeneration != _downloadGeneration) return;
+      print('❌ Download failed to start [$id]: $e');
       Logger.root.severe('Download failed to start: $e', e, stackTrace);
       _resetOnError();
     }

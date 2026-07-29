@@ -3,6 +3,7 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hive/hive.dart';
+import 'package:logging/logging.dart';
 
 class SongDownloadState extends Equatable {
   final String songId;
@@ -84,8 +85,21 @@ class SongDownloadCubit extends Cubit<SongDownloadState> {
     );
   }
 
-  Future<void> startDownload(BuildContext context) async {
-    await _download.prepareDownload(context, _data);
+  Future<void> startDownload(BuildContext context, [Map? freshData]) async {
+    if (freshData != null) {
+      syncData(freshData);
+    }
+    print('⬇️ startDownload called for ${state.songId}');
+    final urlStr = _data['url']?.toString() ?? '';
+    final urlPreview = urlStr.length > 80 ? '${urlStr.substring(0, 80)}...' : urlStr;
+    print('⬇️ url=$urlPreview');
+    print('⬇️ language=${_data['language']} genre=${_data['genre']}');
+    try {
+      await _download.prepareDownload(context, _data);
+    } catch (e, st) {
+      print('❌ prepareDownload threw: $e');
+      Logger.root.severe('prepareDownload threw', e, st);
+    }
     _emitFromDownload();
   }
 

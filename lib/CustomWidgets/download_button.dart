@@ -3,12 +3,11 @@
 import 'package:blackhole/APIs/api.dart';
 import 'package:blackhole/CustomWidgets/snackbar.dart';
 import 'package:blackhole/Services/download.dart';
-import 'package:blackhole/bloc/song_download/song_download_cubit.dart';
 import 'package:blackhole/localization/app_localizations.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:hive/hive.dart';
 
-class DownloadButton extends StatelessWidget {
+class DownloadButton extends StatefulWidget {
   final Map data;
   final String? icon;
   final double? size;
@@ -20,141 +19,156 @@ class DownloadButton extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
-    final songId = data['id'].toString();
-    return BlocProvider(
-      key: ValueKey('song_download_$songId'),
-      create: (_) => SongDownloadCubit(songId: songId, data: data),
-      child: _DownloadButtonView(
-        data: data,
-        icon: icon,
-        size: size,
-      ),
-    );
+  _DownloadButtonState createState() => _DownloadButtonState();
+}
+
+class _DownloadButtonState extends State<DownloadButton> {
+  late Download down;
+  final Box downloadsBox = Hive.box('downloads');
+  final ValueNotifier<bool> showStopButton = ValueNotifier<bool>(false);
+
+  void _onDownloadUpdate() {
+    if (mounted) setState(() {});
   }
-}
-
-class _DownloadButtonView extends StatefulWidget {
-  final Map data;
-  final String? icon;
-  final double? size;
-
-  const _DownloadButtonView({
-    required this.data,
-    this.icon,
-    this.size,
-  });
 
   @override
-  State<_DownloadButtonView> createState() => _DownloadButtonViewState();
-}
+  void initState() {
+    super.initState();
+    down = Download(widget.data['id'].toString());
+    down.addListener(_onDownloadUpdate);
+  }
 
-class _DownloadButtonViewState extends State<_DownloadButtonView> {
   @override
-  void didUpdateWidget(covariant _DownloadButtonView oldWidget) {
+  void didUpdateWidget(covariant DownloadButton oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.data['id']?.toString() != widget.data['id']?.toString() ||
-        oldWidget.data['url']?.toString() != widget.data['url']?.toString()) {
-      context.read<SongDownloadCubit>().syncData(widget.data);
+    final newId = widget.data['id'].toString();
+    if (oldWidget.data['id'].toString() != newId) {
+      down.removeListener(_onDownloadUpdate);
+      down = Download(newId);
+      down.addListener(_onDownloadUpdate);
     }
   }
 
   @override
+  void dispose() {
+    down.removeListener(_onDownloadUpdate);
+    showStopButton.dispose();
+    super.dispose();
+  }
+
+  Future<void> _startDownload() async {
+    print('⬇️ [BTN] Download tapped id=${widget.data['id']}');
+    print('⬇️ [BTN] title=${widget.data['title']}');
+    final url = widget.data['url']?.toString() ?? '';
+    print(
+      '⬇️ [BTN] url=${url.length > 80 ? '${url.substring(0, 80)}...' : url}',
+    );
+    await down.prepareDownload(context, widget.data);
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final bool done = downloadsBox.containsKey(widget.data['id']) ||
+        downloadsBox.containsKey(widget.data['id'].toString());
+    // Use isDownloading so spinner shows as soon as tap starts
+    // (progress may still be 0/null during setup).
+    final bool active = down.isDownloading;
+
     return SizedBox.square(
       dimension: 50,
       child: Center(
-        child: BlocBuilder<SongDownloadCubit, SongDownloadState>(
-          builder: (context, state) {
-            if (state.isDownloaded) {
-              return IconButton(
+        child: done
+            ? IconButton(
                 icon: const Icon(Icons.download_done_rounded),
                 tooltip: 'Download Done',
                 color: Theme.of(context).colorScheme.secondary,
                 iconSize: widget.size ?? 24.0,
-                onPressed: () {
-                  context.read<SongDownloadCubit>().startDownload(context);
-                },
-              );
-            }
-
-            if (!state.isDownloading) {
-              return IconButton(
-                icon: Icon(
-                  widget.icon == 'download'
-                      ? Icons.download_rounded
-                      : Icons.save_alt,
-                ),
-                iconSize: widget.size ?? 24.0,
-                color: Theme.of(context).iconTheme.color,
-                tooltip: 'Download',
-                onPressed: () {
-                  context.read<SongDownloadCubit>().startDownload(context);
-                },
-              );
-            }
-
-            final progress = state.progress;
-            return GestureDetector(
-              onTap: () {
-                final cubit = context.read<SongDownloadCubit>();
-                cubit.showStop();
-                Future.delayed(const Duration(seconds: 2), () {
-                  cubit.hideStop();
-                });
-              },
-              child: Stack(
-                children: [
-                  Center(
-                    child: CircularProgressIndicator(
-                      // Indeterminate until first real progress bytes arrive.
-                      value: (progress == null || progress <= 0)
-                          ? null
-                          : (progress >= 1 ? null : progress),
+                onPressed: _startDownload,
+              )
+            : !active
+                ? IconButton(
+                    icon: Icon(
+                      widget.icon == 'download'
+                          ? Icons.download_rounded
+                          : Icons.save_alt,
                     ),
-                  ),
-                  Center(
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Visibility(
-                            visible: !state.showStopButton,
-                            child: Center(
-                              child: Text(
-                                progress == null || progress <= 0
-                                    ? '0%'
-                                    : '${(100 * progress).round()}%',
-                              ),
-                            ),
+                    iconSize: widget.size ?? 24.0,
+                    color: Theme.of(context).iconTheme.color,
+                    tooltip: 'Download',
+                    onPressed: _startDownload,
+                  )
+                : GestureDetector(
+                    child: Stack(
+                      children: [
+                        Center(
+                          child: CircularProgressIndicator(
+                            value: (down.progress == null ||
+                                    down.progress! <= 0 ||
+                                    down.progress! >= 1)
+                                ? null
+                                : down.progress,
                           ),
-                          Visibility(
-                            visible: state.showStopButton,
+                        ),
+                        Center(
+                          child: ValueListenableBuilder(
+                            valueListenable: showStopButton,
                             child: Center(
                               child: IconButton(
-                                icon: const Icon(Icons.close_rounded),
+                                icon: const Icon(
+                                  Icons.close_rounded,
+                                ),
                                 iconSize: 25.0,
                                 color: Theme.of(context).iconTheme.color,
-                                tooltip:
-                                    AppLocalizations.of(context)!.stopDown,
+                                tooltip: AppLocalizations.of(
+                                  context,
+                                )!
+                                    .stopDown,
                                 onPressed: () {
-                                  context
-                                      .read<SongDownloadCubit>()
-                                      .cancelDownload();
+                                  down.cancelDownload();
+                                  showStopButton.value = false;
                                 },
                               ),
                             ),
+                            builder: (
+                              BuildContext context,
+                              bool showValue,
+                              Widget? child,
+                            ) {
+                              return AnimatedContainer(
+                                duration: const Duration(milliseconds: 200),
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Visibility(
+                                      visible: !showValue,
+                                      child: Center(
+                                        child: Text(
+                                          down.progress == null ||
+                                                  down.progress! <= 0
+                                              ? '0%'
+                                              : '${(100 * down.progress!).round()}%',
+                                        ),
+                                      ),
+                                    ),
+                                    Visibility(
+                                      visible: showValue,
+                                      child: child!,
+                                    ),
+                                  ],
+                                ),
+                              );
+                            },
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
+                    onTap: () {
+                      showStopButton.value = true;
+                      Future.delayed(const Duration(seconds: 2), () async {
+                        showStopButton.value = false;
+                      });
+                    },
                   ),
-                ],
-              ),
-            );
-          },
-        ),
       ),
     );
   }
@@ -212,7 +226,8 @@ class _MultiDownloadButtonState extends State<MultiDownloadButton> {
                 tooltip: AppLocalizations.of(context)!.downDone,
                 onPressed: () {},
               )
-            : !down.isDownloading && down.progress == 0
+            : !down.isDownloading &&
+                    (down.progress == null || down.progress == 0)
                 ? Center(
                     child: IconButton(
                       icon: const Icon(
@@ -323,7 +338,8 @@ class _AlbumDownloadButtonState extends State<AlbumDownloadButton> {
                 tooltip: AppLocalizations.of(context)!.downDone,
                 onPressed: () {},
               )
-            : !down.isDownloading && down.progress == 0
+            : !down.isDownloading &&
+                    (down.progress == null || down.progress == 0)
                 ? Center(
                     child: IconButton(
                       icon: const Icon(
