@@ -653,14 +653,22 @@ class AudioPlayerHandlerImpl extends BaseAudioHandler
         if (downloadsBox != null &&
             downloadsBox!.containsKey(mediaItem.id) &&
             useDown) {
-          Logger.root.info('Found ${mediaItem.id} in downloads');
-          audioSource = AudioSource.uri(
-            Uri.file(
-              (downloadsBox!.get(mediaItem.id) as Map)['path'].toString(),
-            ),
-            tag: mediaItem.id,
-          );
-        } else {
+          final downloaded =
+              downloadsBox!.get(mediaItem.id) as Map? ?? <dynamic, dynamic>{};
+          final localPath = downloaded['path']?.toString() ?? '';
+          if (localPath.isNotEmpty && File(localPath).existsSync()) {
+            Logger.root.info('Playing ${mediaItem.id} from local download');
+            audioSource = AudioSource.uri(
+              Uri.file(localPath),
+              tag: mediaItem.id,
+            );
+          } else {
+            Logger.root.warning(
+              'Download entry for ${mediaItem.id} missing file at $localPath',
+            );
+          }
+        }
+        if (audioSource == null) {
           if (mediaItem.genre == 'YouTube') {
             print('🔍 [DEBUG] Processing YouTube item: ${mediaItem.title}');
             print('🔍 [DEBUG] skipRefresh flag: $skipRefresh');

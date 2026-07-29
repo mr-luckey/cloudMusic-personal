@@ -189,12 +189,24 @@ class PlayerInvoke {
 
   static void setDownValues(List response, int index) {
     final List<MediaItem> queue = [];
-    queue.addAll(
-      response.map(
-        (song) => MediaItemConverter.downMapToMediaItem(song as Map),
-      ),
-    );
-    updateNplay(queue, index);
+    for (final song in response) {
+      final map = song as Map;
+      final path = map['path']?.toString() ?? '';
+      if (path.isEmpty || !File(path).existsSync()) {
+        Logger.root.warning(
+          'Skipping missing downloaded file: ${map['title']} ($path)',
+        );
+        continue;
+      }
+      queue.add(MediaItemConverter.downMapToMediaItem(map));
+    }
+    if (queue.isEmpty) {
+      Logger.root.severe('No playable downloaded files found in list');
+      endPreparing();
+      return;
+    }
+    final safeIndex = index.clamp(0, queue.length - 1);
+    updateNplay(queue, safeIndex);
   }
 
   static Future<void> refreshYtLink(Map playItem) async {

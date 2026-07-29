@@ -116,23 +116,96 @@ class Download with ChangeNotifier {
   bool _isStale(int generation) =>
       !download || generation != _downloadGeneration;
 
+  bool _isYouTubeSong(Map data) {
+    final url = data['url']?.toString() ?? '';
+    final language = data['language']?.toString() ?? '';
+    final genre = data['genre']?.toString() ?? '';
+    return language == 'YouTube' ||
+        genre == 'YouTube' ||
+        url.contains('google') ||
+        url.contains('youtube');
+  }
+
+  bool _isDirectStreamUrl(String url) {
+    return url.startsWith('http') &&
+        (url.contains('googlevideo') ||
+            url.contains('googleusercontent') ||
+            url.contains('saavncdn') ||
+            url.contains('jiosaavn'));
+  }
+
+  Map<String, String> _youtubeHeaders() => {
+        'User-Agent':
+            'Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36',
+        'Referer': 'https://www.youtube.com/',
+        'Origin': 'https://www.youtube.com',
+        'Accept': '*/*',
+      };
+
+  Future<String> _resolveDownloadPath(String preferredPath) async {
+    if (preferredPath.isNotEmpty) {
+      try {
+        final dir = Directory(preferredPath);
+        if (!await dir.exists()) {
+          await dir.create(recursive: true);
+        }
+        // Verify write access with a tiny probe file.
+        final probe = File('${dir.path}/.cloudspot_write_test');
+        await probe.writeAsString('ok');
+        await probe.delete();
+        return preferredPath;
+      } catch (e) {
+        Logger.root.warning(
+          'Download path not writable ($preferredPath), falling back: $e',
+        );
+      }
+    }
+    final Directory docsDir = await getApplicationDocumentsDirectory();
+    final fallback = '${docsDir.path}/Music';
+    final fallbackDir = Directory(fallback);
+    if (!await fallbackDir.exists()) {
+      await fallbackDir.create(recursive: true);
+    }
+    await Hive.box('settings').put('downloadPath', fallback);
+    return fallback;
+  }
+
+  String _formatBytes(int bytes) {
+    if (bytes < 1024) return '$bytes B';
+    if (bytes < 1024 * 1024) {
+      return '${(bytes / 1024).toStringAsFixed(1)} KB';
+    }
+    return '${(bytes / (1024 * 1024)).toStringAsFixed(2)} MB';
+  }
+
   void _logProgress(int received, int total) {
+    final receivedLabel = _formatBytes(received);
     if (total <= 0) {
-      // Log every ~256 KB when size is unknown.
-      final bucket = received ~/ (256 * 1024);
+      // Log every ~128 KB when size is unknown.
+      final bucket = received ~/ (128 * 1024);
       if (bucket <= _lastLoggedPercent && received > 0) return;
       _lastLoggedPercent = bucket;
-      Logger.root.info(
-        'Download progress for $id: $received bytes (total unknown)',
-      );
+      final msg =
+          '⬇️ Downloading [$id]: $receivedLabel / ? (size unknown)';
+      print(msg);
+      Logger.root.info(msg);
       return;
     }
     final percent = ((received / total) * 100).floor();
-    if (percent < _lastLoggedPercent + 10 && percent < 100) return;
+    // Log every 5% so progress is visible in console.
+    if (percent < _lastLoggedPercent + 5 && percent < 100 && percent > 0) {
+      return;
+    }
+    // Always log first chunk and completion.
+    if (percent == _lastLoggedPercent && percent != 0 && percent != 100) {
+      return;
+    }
     _lastLoggedPercent = percent;
-    Logger.root.info(
-      'Download progress for $id: $percent% ($received / $total bytes)',
-    );
+    final totalLabel = _formatBytes(total);
+    final msg =
+        '⬇️ Downloading [$id]: $receivedLabel / $totalLabel ($percent%)';
+    print(msg);
+    Logger.root.info(msg);
   }
 
   Future<void> prepareDownload(
@@ -145,24 +218,28 @@ class Download with ChangeNotifier {
     final generation = ++_downloadGeneration;
     download = true;
     _isDownloading = true;
-    progress = 0.0;
+    // null => indeterminate spinner in UI (not stuck on "download" icon)
+    progress = null;
     _lastLoggedPercent = -1;
     notifyListeners();
     if (Platform.isAndroid || Platform.isIOS) {
       Logger.root.info('Requesting storage permission');
-      PermissionStatus status = await Permission.accessMediaLocation.status;
-      if (status.isDenied) {
-        Logger.root.info('Request denied');
-        await [
-          Permission.storage,
-          Permission.accessMediaLocation,
-          Permission.mediaLibrary,
-        ].request();
-      }
-      status = await Permission.storage.status;
-      if (status.isPermanentlyDenied) {
-        Logger.root.info('Request permanently denied');
-        await openAppSettings();
+      try {
+        PermissionStatus status = await Permission.accessMediaLocation.status;
+        if (status.isDenied) {
+          Logger.root.info('Request denied');
+          await [
+            Permission.storage,
+            Permission.accessMediaLocation,
+            Permission.mediaLibrary,
+          ].request();
+        }
+        status = await Permission.storage.status;
+        if (status.isPermanentlyDenied) {
+          Logger.root.info('Storage permanently denied — continuing with app dir fallback');
+        }
+      } catch (e) {
+        Logger.root.warning('Permission request failed, continuing: $e');
       }
     }
     if (_isStale(generation)) {
@@ -196,28 +273,26 @@ class Download with ChangeNotifier {
     filename = '${filename.replaceAll(avoid, "").replaceAll("  ", " ")}.m4a';
     if (dlPath == '') {
       Logger.root.info('Cached Download path is empty, getting new path');
-      final String? temp = await ExtStorageProvider.getExtStorage(
-        dirName: 'Music',
-        writeAccess: true,
-      );
-      if (temp != null && temp.isNotEmpty) {
-        dlPath = temp;
-      } else {
-        final Directory docsDir = await getApplicationDocumentsDirectory();
-        dlPath = '${docsDir.path}/Music';
-        if (!await Directory(dlPath).exists()) {
-          await Directory(dlPath).create(recursive: true);
+      try {
+        final String? temp = await ExtStorageProvider.getExtStorage(
+          dirName: 'Music',
+          writeAccess: true,
+        );
+        if (temp != null && temp.isNotEmpty) {
+          dlPath = temp;
         }
+      } catch (e) {
+        Logger.root.warning('ExtStorageProvider failed: $e');
       }
-      await Hive.box('settings').put('downloadPath', dlPath);
     }
+    dlPath = await _resolveDownloadPath(dlPath);
     Logger.root.info('New Download path: $dlPath');
-    if (data['url'].toString().contains('google') && createYoutubeFolder) {
+    if (_isYouTubeSong(data) && createYoutubeFolder) {
       Logger.root.info('Youtube audio detected, creating Youtube folder');
       dlPath = '$dlPath/YouTube';
       if (!await Directory(dlPath).exists()) {
         Logger.root.info('Creating Youtube folder');
-        await Directory(dlPath).create();
+        await Directory(dlPath).create(recursive: true);
       }
     }
 
@@ -362,7 +437,6 @@ class Download with ChangeNotifier {
                                 dlPath,
                                 filename,
                                 data,
-                                generation: generation,
                               );
                               rememberOption = 1;
                             },
@@ -387,7 +461,6 @@ class Download with ChangeNotifier {
                                 dlPath,
                                 filename,
                                 data,
-                                generation: generation,
                               );
                             },
                             child: Text(
@@ -436,12 +509,13 @@ class Download with ChangeNotifier {
     _httpClient = null;
     download = true;
     _isDownloading = true;
-    progress = 0.0;
+    progress = null;
     _lastLoggedPercent = -1;
     notifyListeners();
     String? filepath;
     late String filepath2;
     String? appPath;
+    String resolvedPath = dlPath ?? '';
     final List<int> bytes = [];
     String lyrics = '';
     final artname = fileName.replaceAll('.m4a', '.jpg');
@@ -462,8 +536,8 @@ class Download with ChangeNotifier {
       }
 
       try {
-        Logger.root.info('Creating audio file $dlPath/$fileName');
-        await File('$dlPath/$fileName')
+        Logger.root.info('Creating audio file $resolvedPath/$fileName');
+        await File('$resolvedPath/$fileName')
             .create(recursive: true)
             .then((value) => filepath = value.path);
         Logger.root.info('Creating image file $appPath/$artname');
@@ -487,14 +561,15 @@ class Download with ChangeNotifier {
           status = await Permission.manageExternalStorage.status;
           if (status.isPermanentlyDenied) {
             Logger.root.info(
-              'ManageExternalStorage Request is permanently denied, opening settings',
+              'ManageExternalStorage permanently denied — using app documents fallback',
             );
-            await openAppSettings();
           }
         }
 
-        Logger.root.info('Retrying to create audio file');
-        await File('$dlPath/$fileName')
+        // Fall back to a writable app documents path if external write failed.
+        resolvedPath = await _resolveDownloadPath('');
+        Logger.root.info('Retrying to create audio file at $resolvedPath');
+        await File('$resolvedPath/$fileName')
             .create(recursive: true)
             .then((value) => filepath = value.path);
 
@@ -512,9 +587,10 @@ class Download with ChangeNotifier {
       _activeFilepath = filepath;
       _activeImagePath = filepath2;
 
-      String kUrl = data['url'].toString();
+      String kUrl = data['url']?.toString() ?? '';
+      final bool isYouTube = _isYouTubeSong(data);
 
-      if (!data['url'].toString().contains('google')) {
+      if (!isYouTube && kUrl.contains('_96.')) {
         Logger.root
             .info('Fetching jiosaavn download url with preferred quality');
         kUrl = kUrl.replaceAll(
@@ -526,23 +602,65 @@ class Download with ChangeNotifier {
       int total = 0;
       int recieved = 0;
       Stream<List<int>> stream;
-      // Download from yt
-      if (data['url'].toString().contains('google')) {
-        final streamInfos = await YouTubeServices.instance
-            .getStreamInfo(data['id'].toString());
-        if (_isStale(activeGeneration)) {
-          await _resetAfterCancel();
-          return;
+      // Download from yt — prefer existing stream URL (play screen already has
+      // one) so we don't hit YouTube rate-limits via getStreamInfo again.
+      if (isYouTube) {
+        Stream<List<int>>? ytStream;
+        if (_isDirectStreamUrl(kUrl)) {
+          try {
+            Logger.root.info(
+              'YouTube download using current stream URL for ${data['id']}',
+            );
+            _httpClient = Client();
+            final request = Request('GET', Uri.parse(kUrl));
+            request.headers.addAll(_youtubeHeaders());
+            final response = await _httpClient!.send(request);
+            if (_isStale(activeGeneration)) {
+              _httpClient?.close();
+              _httpClient = null;
+              await _resetAfterCancel();
+              return;
+            }
+            if (response.statusCode >= 200 && response.statusCode < 300) {
+              total = response.contentLength ?? 0;
+              ytStream = response.stream;
+            } else {
+              Logger.root.warning(
+                'Direct YT URL returned ${response.statusCode}, falling back to getStreamInfo',
+              );
+              _httpClient?.close();
+              _httpClient = null;
+            }
+          } catch (e) {
+            Logger.root.warning(
+              'Direct YT URL download failed, falling back to getStreamInfo: $e',
+            );
+            _httpClient?.close();
+            _httpClient = null;
+          }
         }
-        if (streamInfos.isEmpty) {
-          throw Exception('No stream available for ${data['id']}');
+
+        if (ytStream == null) {
+          final streamInfos = await YouTubeServices.instance
+              .getStreamInfo(data['id'].toString());
+          if (_isStale(activeGeneration)) {
+            await _resetAfterCancel();
+            return;
+          }
+          if (streamInfos.isEmpty) {
+            throw Exception('No stream available for ${data['id']}');
+          }
+          final AudioOnlyStreamInfo streamInfo =
+              preferredYtDownloadQuality == 'Low'
+                  ? streamInfos.first
+                  : streamInfos.last;
+          total = streamInfo.size.totalBytes;
+          Logger.root.info(
+            'YouTube stream size for ${data['id']}: $total bytes',
+          );
+          ytStream = YouTubeServices.instance.getStreamClient(streamInfo);
         }
-        final AudioOnlyStreamInfo streamInfo = streamInfos.last;
-        total = streamInfo.size.totalBytes;
-        Logger.root.info(
-          'YouTube stream size for ${data['id']}: $total bytes',
-        );
-        stream = YouTubeServices.instance.getStreamClient(streamInfo);
+        stream = ytStream;
       } else {
         Logger.root.info('Connecting to Client');
         _httpClient = Client();
@@ -561,6 +679,11 @@ class Download with ChangeNotifier {
         stream = response.stream;
       }
       Logger.root.info('Client connected, Starting download for ${data['id']}');
+      final startMsg = total > 0
+          ? '⬇️ Download started [$id]: 0 B / ${_formatBytes(total)} (0%)'
+          : '⬇️ Download started [$id]: waiting for data...';
+      print(startMsg);
+      Logger.root.info(startMsg);
       _streamSubscription = stream.listen(
         (value) {
           if (_isStale(activeGeneration)) return;
@@ -585,6 +708,10 @@ class Download with ChangeNotifier {
             return;
           }
           try {
+            final doneMsg =
+                '✅ Download complete [$id]: ${_formatBytes(recieved)}'
+                '${total > 0 ? ' / ${_formatBytes(total)}' : ''} — saving file...';
+            print(doneMsg);
             Logger.root.info(
               'Download complete for ${data['id']}: $recieved bytes, modifying file',
             );
@@ -644,12 +771,6 @@ class Download with ChangeNotifier {
             Logger.root.info('Closing connection & notifying listeners');
             imageClient.close();
             lastDownloadId = data['id'].toString();
-            progress = 0.0;
-            _isDownloading = false;
-            _lastLoggedPercent = -1;
-            _activeFilepath = null;
-            _activeImagePath = null;
-            notifyListeners();
 
             Logger.root.info('Putting data to downloads database');
             final songData = {
@@ -674,8 +795,16 @@ class Download with ChangeNotifier {
               'from_yt': data['language'].toString() == 'YouTube',
               'dateAdded': DateTime.now().toString(),
             };
-            Hive.box('downloads').put(songData['id'].toString(), songData);
+            await Hive.box('downloads').put(songData['id'].toString(), songData);
 
+            progress = 0.0;
+            _isDownloading = false;
+            _lastLoggedPercent = -1;
+            _activeFilepath = null;
+            _activeImagePath = null;
+            notifyListeners();
+
+            print('✅ Everything Done! [$id] saved to $filepath');
             Logger.root.info('Everything Done!');
           } catch (e, stackTrace) {
             Logger.root.severe('Error finalizing download: $e', e, stackTrace);

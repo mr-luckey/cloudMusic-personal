@@ -8,26 +8,27 @@ import 'package:youtube_explode_dart/youtube_explode_dart.dart';
 // ignore: avoid_classes_with_only_static_members
 class MediaItemConverter {
   static Map mediaItemToMap(MediaItem mediaItem) {
+    final extras = mediaItem.extras ?? <String, dynamic>{};
     return {
       'id': mediaItem.id,
       'album': mediaItem.album.toString(),
-      'album_id': mediaItem.extras?['album_id'],
+      'album_id': extras['album_id'],
       'artist': mediaItem.artist.toString(),
       'duration': mediaItem.duration?.inSeconds.toString(),
       'genre': mediaItem.genre.toString(),
-      'has_lyrics': mediaItem.extras!['has_lyrics'],
+      'has_lyrics': extras['has_lyrics'],
       'image': mediaItem.artUri.toString(),
-      'language': mediaItem.extras?['language'].toString(),
-      'release_date': mediaItem.extras?['release_date'],
-      'subtitle': mediaItem.extras?['subtitle'],
+      'language': extras['language']?.toString() ?? mediaItem.genre.toString(),
+      'release_date': extras['release_date'],
+      'subtitle': extras['subtitle'],
       'title': mediaItem.title,
-      'url': mediaItem.extras!['url'].toString(),
-      'allUrls': mediaItem.extras!['allUrls'],
-      'year': mediaItem.extras?['year'].toString(),
-      '320kbps': mediaItem.extras?['320kbps'],
-      'quality': mediaItem.extras?['quality'],
-      'perma_url': mediaItem.extras?['perma_url'],
-      'expire_at': mediaItem.extras?['expire_at'],
+      'url': extras['url']?.toString() ?? '',
+      'allUrls': extras['allUrls'],
+      'year': extras['year']?.toString(),
+      '320kbps': extras['320kbps'],
+      'quality': extras['quality'],
+      'perma_url': extras['perma_url'],
+      'expire_at': extras['expire_at'],
     };
   }
 

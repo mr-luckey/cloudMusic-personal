@@ -2,13 +2,13 @@
 
 import 'package:blackhole/APIs/api.dart';
 import 'package:blackhole/CustomWidgets/snackbar.dart';
-import 'package:blackhole/G-Ads.dart/intersatail_ads.dart';
 import 'package:blackhole/Services/download.dart';
-import 'package:flutter/material.dart';
+import 'package:blackhole/bloc/song_download/song_download_cubit.dart';
 import 'package:blackhole/localization/app_localizations.dart';
-import 'package:hive/hive.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
-class DownloadButton extends StatefulWidget {
+class DownloadButton extends StatelessWidget {
   final Map data;
   final String? icon;
   final double? size;
@@ -20,37 +20,43 @@ class DownloadButton extends StatefulWidget {
   });
 
   @override
-  _DownloadButtonState createState() => _DownloadButtonState();
+  Widget build(BuildContext context) {
+    final songId = data['id'].toString();
+    return BlocProvider(
+      key: ValueKey('song_download_$songId'),
+      create: (_) => SongDownloadCubit(songId: songId, data: data),
+      child: _DownloadButtonView(
+        data: data,
+        icon: icon,
+        size: size,
+      ),
+    );
+  }
 }
 
-class _DownloadButtonState extends State<DownloadButton> {
-  late Download down;
-  // final RewardedAdManager rewardedAdManager = RewardedAdManager();
-  final Box downloadsBox = Hive.box('downloads');
-  final ValueNotifier<bool> showStopButton = ValueNotifier<bool>(false);
+class _DownloadButtonView extends StatefulWidget {
+  final Map data;
+  final String? icon;
+  final double? size;
+
+  const _DownloadButtonView({
+    required this.data,
+    this.icon,
+    this.size,
+  });
 
   @override
-  void initState() {
-    super.initState();
-    down = Download(widget.data['id'].toString());
-    down.addListener(() {
-      if (mounted) {
-        setState(() {});
-      }
-    });
-  }
+  State<_DownloadButtonView> createState() => _DownloadButtonViewState();
+}
 
+class _DownloadButtonViewState extends State<_DownloadButtonView> {
   @override
-  void dispose() {
-    showStopButton.dispose();
-    super.dispose();
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    // Set _mounted to true when the widget is added to the tree
-    // _mounted = true;
+  void didUpdateWidget(covariant _DownloadButtonView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.data['id']?.toString() != widget.data['id']?.toString() ||
+        oldWidget.data['url']?.toString() != widget.data['url']?.toString()) {
+      context.read<SongDownloadCubit>().syncData(widget.data);
+    }
   }
 
   @override
@@ -58,104 +64,97 @@ class _DownloadButtonState extends State<DownloadButton> {
     return SizedBox.square(
       dimension: 50,
       child: Center(
-        child: (downloadsBox.containsKey(widget.data['id']))
-            ? IconButton(
+        child: BlocBuilder<SongDownloadCubit, SongDownloadState>(
+          builder: (context, state) {
+            if (state.isDownloaded) {
+              return IconButton(
                 icon: const Icon(Icons.download_done_rounded),
                 tooltip: 'Download Done',
                 color: Theme.of(context).colorScheme.secondary,
                 iconSize: widget.size ?? 24.0,
                 onPressed: () {
-                  // AdManager.showInterstitialAd();
-                  // rewardedAdManager.showRewardedAd(context, () {
-                  down.prepareDownload(context, widget.data);
-                  // });
+                  context.read<SongDownloadCubit>().startDownload(context);
                 },
-              )
-            : down.progress == 0
-                ? IconButton(
-                    icon: Icon(
-                      widget.icon == 'download'
-                          ? Icons.download_rounded
-                          : Icons.save_alt,
+              );
+            }
+
+            if (!state.isDownloading) {
+              return IconButton(
+                icon: Icon(
+                  widget.icon == 'download'
+                      ? Icons.download_rounded
+                      : Icons.save_alt,
+                ),
+                iconSize: widget.size ?? 24.0,
+                color: Theme.of(context).iconTheme.color,
+                tooltip: 'Download',
+                onPressed: () {
+                  context.read<SongDownloadCubit>().startDownload(context);
+                },
+              );
+            }
+
+            final progress = state.progress;
+            return GestureDetector(
+              onTap: () {
+                final cubit = context.read<SongDownloadCubit>();
+                cubit.showStop();
+                Future.delayed(const Duration(seconds: 2), () {
+                  cubit.hideStop();
+                });
+              },
+              child: Stack(
+                children: [
+                  Center(
+                    child: CircularProgressIndicator(
+                      // Indeterminate until first real progress bytes arrive.
+                      value: (progress == null || progress <= 0)
+                          ? null
+                          : (progress >= 1 ? null : progress),
                     ),
-                    iconSize: widget.size ?? 24.0,
-                    color: Theme.of(context).iconTheme.color,
-                    tooltip: 'Download',
-                    onPressed: () {
-                      // rewardedAdManager.showRewardedAd(context, () {
-                      down.prepareDownload(context, widget.data);
-                      // });
-                      // AdManager.showInterstitialAd();
-                      // down.prepareDownload(context, widget.data);
-                    },
-                  )
-                : GestureDetector(
-                    child: Stack(
-                      children: [
-                        Center(
-                          child: CircularProgressIndicator(
-                            value: down.progress == 1 ? null : down.progress,
+                  ),
+                  Center(
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Visibility(
+                            visible: !state.showStopButton,
+                            child: Center(
+                              child: Text(
+                                progress == null || progress <= 0
+                                    ? '0%'
+                                    : '${(100 * progress).round()}%',
+                              ),
+                            ),
                           ),
-                        ),
-                        Center(
-                          child: ValueListenableBuilder(
-                            valueListenable: showStopButton,
+                          Visibility(
+                            visible: state.showStopButton,
                             child: Center(
                               child: IconButton(
-                                icon: const Icon(
-                                  Icons.close_rounded,
-                                ),
+                                icon: const Icon(Icons.close_rounded),
                                 iconSize: 25.0,
                                 color: Theme.of(context).iconTheme.color,
-                                tooltip: AppLocalizations.of(
-                                  context,
-                                )!
-                                    .stopDown,
+                                tooltip:
+                                    AppLocalizations.of(context)!.stopDown,
                                 onPressed: () {
-                                  down.cancelDownload();
-                                  showStopButton.value = false;
+                                  context
+                                      .read<SongDownloadCubit>()
+                                      .cancelDownload();
                                 },
                               ),
                             ),
-                            builder: (
-                              BuildContext context,
-                              bool showValue,
-                              Widget? child,
-                            ) {
-                              return AnimatedContainer(
-                                duration: const Duration(milliseconds: 200),
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Visibility(
-                                      visible: !showValue,
-                                      child: Center(
-                                        child: Text(
-                                          down.progress == null
-                                              ? '0%'
-                                              : '${(100 * down.progress!).round()}%',
-                                        ),
-                                      ),
-                                    ),
-                                    Visibility(
-                                      visible: showValue,
-                                      child: child!,
-                                    ),
-                                  ],
-                                ),
-                              );
-                            },
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                    onTap: () {
-                      showStopButton.value = true;
-                      Future.delayed(const Duration(seconds: 2), () async {
-                        showStopButton.value = false;
-                      });
-                    },
                   ),
+                ],
+              ),
+            );
+          },
+        ),
       ),
     );
   }
@@ -175,7 +174,6 @@ class MultiDownloadButton extends StatefulWidget {
 }
 
 class _MultiDownloadButtonState extends State<MultiDownloadButton> {
-  // final RewardedAdManager rewardedAdManager = RewardedAdManager();
   late Download down;
   int done = 0;
 
@@ -184,7 +182,7 @@ class _MultiDownloadButtonState extends State<MultiDownloadButton> {
     super.initState();
     down = Download(widget.data.first['id'].toString());
     down.addListener(() {
-      setState(() {});
+      if (mounted) setState(() {});
     });
   }
 
@@ -214,7 +212,7 @@ class _MultiDownloadButtonState extends State<MultiDownloadButton> {
                 tooltip: AppLocalizations.of(context)!.downDone,
                 onPressed: () {},
               )
-            : down.progress == 0
+            : !down.isDownloading && down.progress == 0
                 ? Center(
                     child: IconButton(
                       icon: const Icon(
@@ -223,8 +221,6 @@ class _MultiDownloadButtonState extends State<MultiDownloadButton> {
                       iconSize: 25.0,
                       tooltip: AppLocalizations.of(context)!.down,
                       onPressed: () async {
-                        // AdManager.showInterstitialAd();
-                        // rewardedAdManager.showRewardedAd(context, () async {
                         for (final items in widget.data) {
                           down.prepareDownload(
                             context,
@@ -237,27 +233,7 @@ class _MultiDownloadButtonState extends State<MultiDownloadButton> {
                             done++;
                           });
                         }
-                        // });
                       },
-
-                      // onPressed: () async {
-                      //   // InterstitialAdWidget();
-
-                      //   // AdManager.showInterstitialAd();
-
-                      //   // for (final items in widget.data) {
-                      //   //   down.prepareDownload(
-                      //   //     context,
-                      //   //     items as Map,
-                      //   //     createFolder: true,
-                      //   //     folderName: widget.playlistName,
-                      //   //   );
-                      //   //   await _waitUntilDone(items['id'].toString());
-                      //   //   setState(() {
-                      //   //     done++;
-                      //   //   });
-                      //   // }
-                      // },
                     ),
                   )
                 : Stack(
@@ -274,7 +250,9 @@ class _MultiDownloadButtonState extends State<MultiDownloadButton> {
                           height: 35,
                           width: 35,
                           child: CircularProgressIndicator(
-                            value: down.progress == 1 ? null : down.progress,
+                            value: down.progress == null || down.progress == 0
+                                ? null
+                                : (down.progress == 1 ? null : down.progress),
                           ),
                         ),
                       ),
@@ -308,7 +286,6 @@ class AlbumDownloadButton extends StatefulWidget {
 }
 
 class _AlbumDownloadButtonState extends State<AlbumDownloadButton> {
-  // final RewardedAdManager rewardedAdManager = RewardedAdManager();
   late Download down;
   int done = 0;
   List data = [];
@@ -319,7 +296,7 @@ class _AlbumDownloadButtonState extends State<AlbumDownloadButton> {
     super.initState();
     down = Download(widget.albumId);
     down.addListener(() {
-      setState(() {});
+      if (mounted) setState(() {});
     });
   }
 
@@ -346,7 +323,7 @@ class _AlbumDownloadButtonState extends State<AlbumDownloadButton> {
                 tooltip: AppLocalizations.of(context)!.downDone,
                 onPressed: () {},
               )
-            : down.progress == 0
+            : !down.isDownloading && down.progress == 0
                 ? Center(
                     child: IconButton(
                       icon: const Icon(
@@ -356,13 +333,11 @@ class _AlbumDownloadButtonState extends State<AlbumDownloadButton> {
                       color: Theme.of(context).iconTheme.color,
                       tooltip: AppLocalizations.of(context)!.down,
                       onPressed: () async {
-                        // AdManager.showInterstitialAd();
                         ShowSnackBar().showSnackBar(
                           context,
                           '${AppLocalizations.of(context)!.downingAlbum} "${widget.albumName}"',
                         );
 
-                        // rewardedAdManager.showRewardedAd(context, () async {
                         data = (await SaavnAPI()
                             .fetchAlbumSongs(widget.albumId))['songs'] as List;
                         for (final items in data) {
@@ -378,32 +353,7 @@ class _AlbumDownloadButtonState extends State<AlbumDownloadButton> {
                           });
                         }
                         finished = true;
-                        // });
                       },
-                      // onPressed: () async {
-                      //   // InterstitialAdWidget();
-                      //   AdManager.showInterstitialAd();
-                      //   ShowSnackBar().showSnackBar(
-                      //     context,
-                      //     '${AppLocalizations.of(context)!.downingAlbum} "${widget.albumName}"',
-                      //   );
-
-                      //   data = (await SaavnAPI()
-                      //       .fetchAlbumSongs(widget.albumId))['songs'] as List;
-                      //   for (final items in data) {
-                      //     down.prepareDownload(
-                      //       context,
-                      //       items as Map,
-                      //       createFolder: true,
-                      //       folderName: widget.albumName,
-                      //     );
-                      //     await _waitUntilDone(items['id'].toString());
-                      //     setState(() {
-                      //       done++;
-                      //     });
-                      //   }
-                      //   finished = true;
-                      // },
                     ),
                   )
                 : Stack(
@@ -420,7 +370,9 @@ class _AlbumDownloadButtonState extends State<AlbumDownloadButton> {
                           height: 35,
                           width: 35,
                           child: CircularProgressIndicator(
-                            value: down.progress == 1 ? null : down.progress,
+                            value: down.progress == null || down.progress == 0
+                                ? null
+                                : (down.progress == 1 ? null : down.progress),
                           ),
                         ),
                       ),
