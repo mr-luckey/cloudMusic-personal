@@ -10,10 +10,29 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:logging/logging.dart';
 import 'package:on_audio_query/on_audio_query.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/scheduler.dart';
 
 // ignore: avoid_classes_with_only_static_members
 class PlayerInvoke {
   static final AudioPlayerHandler audioHandler = GetIt.I<AudioPlayerHandler>();
+  static final ValueNotifier<bool> isPreparingSong = ValueNotifier<bool>(false);
+
+  /// Call as soon as the user taps a song — before any URL / metadata fetch —
+  /// so the miniplayer shimmer starts immediately.
+  static void beginPreparing() {
+    if (isPreparingSong.value) return;
+    SchedulerBinding.instance.addPostFrameCallback((_) {
+      isPreparingSong.value = true;
+    });
+  }
+
+  static void endPreparing() {
+    if (!isPreparingSong.value) return;
+    SchedulerBinding.instance.addPostFrameCallback((_) {
+      isPreparingSong.value = false;
+    });
+  }
 
   static Future<void> init({
     required List songsList,
@@ -25,38 +44,47 @@ class PlayerInvoke {
     bool shuffle = false,
     String? playlistBox,
   }) async {
-    final int globalIndex = index < 0 ? 0 : index;
-    bool? offline = isOffline;
-    final List finalList = songsList.toList();
-    if (shuffle) finalList.shuffle();
-    if (offline == null) {
-      if (audioHandler.mediaItem.value?.extras!['url'].startsWith('http')
-          as bool) {
-        offline = false;
-      } else {
-        offline = true;
-      }
+    // Start shimmer immediately on play request (before offline detection /
+    // any async work that can delay or throw).
+    if (!fromMiniplayer) {
+      beginPreparing();
     }
 
-    if (!fromMiniplayer) {
-      if (Platform.isIOS) {
-        // Don't know why but it fixes the playback issue with iOS Side
-        audioHandler.stop();
+    try {
+      final int globalIndex = index < 0 ? 0 : index;
+      bool? offline = isOffline;
+      final List finalList = songsList.toList();
+      if (shuffle) finalList.shuffle();
+      if (offline == null) {
+        final url = audioHandler.mediaItem.value?.extras?['url']?.toString();
+        // http(s) URLs are online streams; local paths are offline.
+        offline = url != null && !url.startsWith('http');
       }
-      if (offline) {
-        fromDownloads
-            ? setDownValues(finalList, globalIndex)
-            : (Platform.isWindows || Platform.isLinux)
-                ? setOffDesktopValues(finalList, globalIndex)
-                : setOffValues(finalList, globalIndex);
-      } else {
-        setValues(
-          finalList,
-          globalIndex,
-          recommend: recommend,
-          // playlistBox: playlistBox,
-        );
+
+      if (!fromMiniplayer) {
+        if (Platform.isIOS) {
+          // Don't know why but it fixes the playback issue with iOS Side
+          audioHandler.stop();
+        }
+        if (offline) {
+          fromDownloads
+              ? setDownValues(finalList, globalIndex)
+              : (Platform.isWindows || Platform.isLinux)
+                  ? setOffDesktopValues(finalList, globalIndex)
+                  : setOffValues(finalList, globalIndex);
+        } else {
+          setValues(
+            finalList,
+            globalIndex,
+            recommend: recommend,
+            // playlistBox: playlistBox,
+          );
+        }
       }
+    } catch (e, stackTrace) {
+      Logger.root.severe('Error in PlayerInvoke.init', e, stackTrace);
+      if (!fromMiniplayer) endPreparing();
+      rethrow;
     }
   }
 
@@ -243,7 +271,8 @@ class PlayerInvoke {
     bool recommend = true,
     // String? playlistBox,
   }) async {
-    final List<MediaItem> queue = [];
+    try {
+      final List<MediaItem> queue = [];
     final Map playItem = response[index] as Map;
     final bool isYouTube = playItem['genre'] == 'YouTube';
 
@@ -299,10 +328,16 @@ class PlayerInvoke {
     // For YouTube, index is always 0 since we only have one song in the queue
     // For others, use the actual index
     await updateNplay(queue, isYouTube ? 0 : index);
+    } catch (e, stackTrace) {
+      Logger.root.severe('Error preparing song playback', e, stackTrace);
+      endPreparing();
+      rethrow;
+    }
   }
 
   static Future<void> updateNplay(List<MediaItem> queue, int index) async {
-    await audioHandler.updateQueue(queue);
+    try {
+      await audioHandler.updateQueue(queue);
     await audioHandler.setShuffleMode(AudioServiceShuffleMode.none);
     await audioHandler.customAction('skipToMediaItem', {'id': queue[index].id});
     await audioHandler.play();
@@ -324,6 +359,9 @@ class PlayerInvoke {
     } else {
       audioHandler.setRepeatMode(AudioServiceRepeatMode.none);
       Hive.box('settings').put('repeatMode', 'None');
+    }
+    } finally {
+      endPreparing();
     }
   }
 }

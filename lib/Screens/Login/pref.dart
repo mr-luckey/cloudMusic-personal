@@ -101,65 +101,67 @@ class _PrefScreenState extends State<PrefScreen> {
                     ],
                   ),
                   SizedBox(
-                    height: MediaQuery.sizeOf(context).height * 0.1,
+                    height: MediaQuery.sizeOf(context).height * 0.06,
                   ),
                   Expanded(
                     child: SingleChildScrollView(
                       physics: const BouncingScrollPhysics(),
-                      padding: const EdgeInsets.only(left: 30.0, right: 30.0),
+                      padding: const EdgeInsets.only(
+                        left: 30.0,
+                        right: 30.0,
+                        bottom: 24.0,
+                      ),
                       child: Column(
-                        mainAxisAlignment: MainAxisAlignment.spaceAround,
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Row(
-                            children: [
-                              RichText(
-                                text: TextSpan(
-                                  text:
-                                      '${AppLocalizations.of(context)!.welcome}\n',
-                                  style: TextStyle(
-                                    fontSize: 46.sp,
-                                    height: 1.0,
-                                    fontWeight: FontWeight.bold,
-                                    color:
-                                        Theme.of(context).colorScheme.secondary,
-                                  ),
-                                  children: <TextSpan>[
-                                    TextSpan(
-                                      text:
-                                          AppLocalizations.of(context)!.aboard,
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 52.sp,
-                                        color: Colors.white,
-                                      ),
-                                    ),
-                                    TextSpan(
-                                      text: '!\n',
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 54.sp,
-                                        color: Theme.of(context)
-                                            .colorScheme
-                                            .secondary,
-                                      ),
-                                    ),
-                                    TextSpan(
-                                      text:
-                                          AppLocalizations.of(context)!.prefReq,
-                                      style: TextStyle(
-                                        height: 1.5,
-                                        fontWeight: FontWeight.w300,
-                                        fontSize: 14.sp,
-                                        color: Colors.white,
-                                      ),
-                                    ),
-                                  ],
+                          FittedBox(
+                            fit: BoxFit.scaleDown,
+                            alignment: Alignment.centerLeft,
+                            child: RichText(
+                              text: TextSpan(
+                                text:
+                                    '${AppLocalizations.of(context)!.welcome}\n',
+                                style: TextStyle(
+                                  fontSize: 46.sp,
+                                  height: 1.0,
+                                  fontWeight: FontWeight.bold,
+                                  color:
+                                      Theme.of(context).colorScheme.secondary,
                                 ),
+                                children: <TextSpan>[
+                                  TextSpan(
+                                    text: AppLocalizations.of(context)!.aboard,
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 52.sp,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                  TextSpan(
+                                    text: '!\n',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 54.sp,
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .secondary,
+                                    ),
+                                  ),
+                                  TextSpan(
+                                    text: AppLocalizations.of(context)!.prefReq,
+                                    style: TextStyle(
+                                      height: 1.5,
+                                      fontWeight: FontWeight.w300,
+                                      fontSize: 14.sp,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ],
                               ),
-                            ],
+                            ),
                           ),
                           SizedBox(
-                            height: MediaQuery.sizeOf(context).height * 0.15,
+                            height: MediaQuery.sizeOf(context).height * 0.06,
                           ),
                           Column(
                             mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -172,8 +174,12 @@ class _PrefScreenState extends State<PrefScreen> {
                                     ),
                                     title: Text(
                                       AppLocalizations.of(context)!.langQue,
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
                                     ),
-                                    trailing: Container(
+                                    trailing: SizedBox(
+                                      width: 120,
+                                      child: Container(
                                       padding: const EdgeInsets.only(
                                         top: 5,
                                         bottom: 5,
@@ -181,7 +187,6 @@ class _PrefScreenState extends State<PrefScreen> {
                                         right: 10,
                                       ),
                                       height: 57.0,
-                                      width: 150,
                                       decoration: BoxDecoration(
                                         borderRadius:
                                             BorderRadius.circular(10.0),
@@ -204,6 +209,7 @@ class _PrefScreenState extends State<PrefScreen> {
                                           textAlign: TextAlign.end,
                                         ),
                                       ),
+                                    ),
                                     ),
                                     dense: true,
                                     onTap: () {
@@ -372,8 +378,12 @@ class _PrefScreenState extends State<PrefScreen> {
                                     ),
                                     title: Text(
                                       AppLocalizations.of(context)!.countryQue,
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
                                     ),
-                                    trailing: Container(
+                                    trailing: SizedBox(
+                                      width: 120,
+                                      child: Container(
                                       padding: const EdgeInsets.only(
                                         top: 5,
                                         bottom: 5,
@@ -381,7 +391,6 @@ class _PrefScreenState extends State<PrefScreen> {
                                         right: 10,
                                       ),
                                       height: 57.0,
-                                      width: 150,
                                       decoration: BoxDecoration(
                                         borderRadius:
                                             BorderRadius.circular(10.0),
@@ -397,9 +406,12 @@ class _PrefScreenState extends State<PrefScreen> {
                                       child: Center(
                                         child: Text(
                                           region,
+                                          maxLines: 2,
+                                          overflow: TextOverflow.ellipsis,
                                           textAlign: TextAlign.end,
                                         ),
                                       ),
+                                    ),
                                     ),
                                     dense: true,
                                     onTap: () {
@@ -573,9 +585,6 @@ class _PrefScreenState extends State<PrefScreen> {
                                 ],
                               ),
                             ],
-                          ),
-                          SizedBox(
-                            height: MediaQuery.sizeOf(context).height * 0.1,
                           ),
                         ],
                       ),

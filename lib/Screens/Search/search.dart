@@ -413,6 +413,7 @@ class _SearchPageState extends State<SearchPage> {
                                                                             ) =>
                                                                                 SongsListViewPage(
                                                                               onTap: (index, listItems) async {
+                                                                                PlayerInvoke.beginPreparing();
                                                                                 final Map response = await YtMusicService().getSongData(
                                                                                   videoId: items[index]['id'].toString(),
                                                                                   data: items[index] as Map,
@@ -433,6 +434,7 @@ class _SearchPageState extends State<SearchPage> {
                                                                                     isOffline: false,
                                                                                   );
                                                                                 } else {
+                                                                                  PlayerInvoke.endPreparing();
                                                                                   ShowSnackBar().showSnackBar(
                                                                                     context,
                                                                                     AppLocalizations.of(
@@ -712,6 +714,8 @@ class _SearchPageState extends State<SearchPage> {
                                                                         'song' ||
                                                                     itemType ==
                                                                         'video') {
+                                                                  PlayerInvoke
+                                                                      .beginPreparing();
                                                                   final Map?
                                                                       response =
                                                                       (itemType ==
@@ -738,6 +742,8 @@ class _SearchPageState extends State<SearchPage> {
                                                                           false,
                                                                     );
                                                                   } else {
+                                                                    PlayerInvoke
+                                                                        .endPreparing();
                                                                     ShowSnackBar()
                                                                         .showSnackBar(
                                                                       context,

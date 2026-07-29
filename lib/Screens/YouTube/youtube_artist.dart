@@ -133,6 +133,7 @@ class _YouTubeArtistState extends State<YouTubeArtist> {
                                 setState(() {
                                   done = false;
                                 });
+                                PlayerInvoke.beginPreparing();
                                 final Map response =
                                     await YtMusicService().getSongData(
                                   videoId: entry['id'].toString(),
@@ -141,6 +142,10 @@ class _YouTubeArtistState extends State<YouTubeArtist> {
                                 setState(() {
                                   done = true;
                                 });
+                                if (response.isEmpty) {
+                                  PlayerInvoke.endPreparing();
+                                  return;
+                                }
                                 PlayerInvoke.init(
                                   songsList: [response],
                                   index: 0,

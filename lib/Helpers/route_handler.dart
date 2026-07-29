@@ -212,6 +212,7 @@ class YtUrlHandler extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (type == 'v') {
+      PlayerInvoke.beginPreparing();
       YouTubeServices.instance
           .formatVideoFromId(id: id)
           .then((Map? response) async {
@@ -222,6 +223,8 @@ class YtUrlHandler extends StatelessWidget {
             isOffline: false,
             recommend: false,
           );
+        } else {
+          PlayerInvoke.endPreparing();
         }
         Navigator.pushReplacement(
           context,

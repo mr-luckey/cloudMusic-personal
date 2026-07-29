@@ -92,50 +92,54 @@ class _AuthScreenState extends State<AuthScreen> {
                   Expanded(
                     child: Center(
                       child: SingleChildScrollView(
-                        padding: const EdgeInsets.only(left: 30.0, right: 30.0),
+                        padding: const EdgeInsets.only(
+                          left: 30.0,
+                          right: 30.0,
+                          bottom: 24.0,
+                        ),
                         physics: const BouncingScrollPhysics(),
                         child: Column(
-                          mainAxisAlignment: MainAxisAlignment.spaceAround,
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Row(
-                              children: [
-                                RichText(
-                                  text: TextSpan(
-                                    text: 'Cloud\nSpot\n',
-                                    style: TextStyle(
-                                      height: 0.97,
-                                      fontSize: 80,
-                                      fontWeight: FontWeight.bold,
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .secondary,
-                                    ),
-                                    children: <TextSpan>[
-                                      const TextSpan(
-                                        text: 'Music',
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 80,
-                                          color: Colors.white,
-                                        ),
-                                      ),
-                                      TextSpan(
-                                        text: '.',
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 80,
-                                          color: Theme.of(context)
-                                              .colorScheme
-                                              .secondary,
-                                        ),
-                                      ),
-                                    ],
+                            FittedBox(
+                              fit: BoxFit.scaleDown,
+                              alignment: Alignment.centerLeft,
+                              child: RichText(
+                                text: TextSpan(
+                                  text: 'Cloud\nSpot\n',
+                                  style: TextStyle(
+                                    height: 0.97,
+                                    fontSize: 80,
+                                    fontWeight: FontWeight.bold,
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .secondary,
                                   ),
+                                  children: <TextSpan>[
+                                    const TextSpan(
+                                      text: 'Music',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 80,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                    TextSpan(
+                                      text: '.',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 80,
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .secondary,
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                              ],
+                              ),
                             ),
                             SizedBox(
-                              height: MediaQuery.sizeOf(context).height * 0.1,
+                              height: MediaQuery.sizeOf(context).height * 0.06,
                             ),
                             Column(
                               children: [
@@ -253,6 +257,9 @@ class _AuthScreenState extends State<AuthScreen> {
                                   ),
                                 ),
                               ],
+                            ),
+                            SizedBox(
+                              height: MediaQuery.sizeOf(context).height * 0.04,
                             ),
                           ],
                         ),

@@ -112,7 +112,8 @@ class _DownloadButtonState extends State<DownloadButton> {
                                 )!
                                     .stopDown,
                                 onPressed: () {
-                                  down.download = false;
+                                  down.cancelDownload();
+                                  showStopButton.value = false;
                                 },
                               ),
                             ),

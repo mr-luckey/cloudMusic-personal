@@ -1,3 +1,4 @@
+import 'package:blackhole/Services/player_service.dart';
 import 'package:blackhole/Services/youtube_services.dart';
 import 'package:blackhole/Services/yt_music.dart';
 import 'package:equatable/equatable.dart';
@@ -50,17 +51,22 @@ class YouTubePlaylistBloc
     YouTubePlaylistSongTapped event,
     Emitter<YouTubePlaylistState> emit,
   ) async {
+    PlayerInvoke.beginPreparing();
     emit(state.copyWith(isProcessing: true));
     try {
       final response = await YouTubeServices.instance.formatVideoFromId(
         id: event.entry['id'].toString(),
         data: event.entry,
       );
+      if (response == null) {
+        PlayerInvoke.endPreparing();
+      }
       emit(state.copyWith(
         isProcessing: false,
         formattedResponse: response,
       ));
     } catch (e) {
+      PlayerInvoke.endPreparing();
       emit(state.copyWith(isProcessing: false));
     }
   }
@@ -69,6 +75,7 @@ class YouTubePlaylistBloc
     YouTubePlaylistPlayAllTapped event,
     Emitter<YouTubePlaylistState> emit,
   ) async {
+    PlayerInvoke.beginPreparing();
     emit(state.copyWith(isProcessing: true));
     try {
       final response = await YouTubeServices.instance.formatVideoFromId(
@@ -83,6 +90,7 @@ class YouTubePlaylistBloc
         playAllTriggered: true,
       ));
     } catch (e) {
+      PlayerInvoke.endPreparing();
       emit(state.copyWith(isProcessing: false));
     }
   }
@@ -91,6 +99,7 @@ class YouTubePlaylistBloc
     YouTubePlaylistShuffleTapped event,
     Emitter<YouTubePlaylistState> emit,
   ) async {
+    PlayerInvoke.beginPreparing();
     emit(state.copyWith(isProcessing: true));
     try {
       final List<Map> playList = List.from(state.searchedList);
@@ -106,6 +115,7 @@ class YouTubePlaylistBloc
         shuffleTriggered: true,
       ));
     } catch (e) {
+      PlayerInvoke.endPreparing();
       emit(state.copyWith(isProcessing: false));
     }
   }
