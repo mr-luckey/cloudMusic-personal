@@ -73,7 +73,6 @@ subprojects {
                         // Fallback to known namespaces
                         def pluginNamespaces = [
                             "facebook_audience_network": "com.dsi.facebook_audience_network",
-                            "metadata_god": "dev.metadata_god",
                             "audiotagger": "com.nicolorebaioli.audiotagger"
                         ]
                         if (pluginNamespaces.containsKey(project.name)) {
@@ -85,7 +84,6 @@ subprojects {
                 // If namespace property doesn't exist or can't be accessed, use known mappings
                 def pluginNamespaces = [
                     "facebook_audience_network": "com.dsi.facebook_audience_network",
-                    "metadata_god": "dev.metadata_god",
                     "audiotagger": "com.nicolorebaioli.audiotagger"
                 ]
                 if (pluginNamespaces.containsKey(project.name)) {
@@ -102,6 +100,12 @@ subprojects {
 subprojects {
     project.buildDir = "${rootProject.buildDir}/${project.name}"
     project.evaluationDependsOn(':app')
+
+    project.pluginManager.withPlugin("com.android.library") {
+        if (!project.pluginManager.hasPlugin("org.jetbrains.kotlin.android")) {
+            project.pluginManager.apply("org.jetbrains.kotlin.android")
+        }
+    }
 }
 
 // tasks.register("clean", Delete) {

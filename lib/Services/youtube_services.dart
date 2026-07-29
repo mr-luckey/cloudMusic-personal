@@ -25,7 +25,12 @@ class YouTubeServices {
     'User-Agent':
         'Mozilla/5.0 (Windows NT 10.0; rv:96.0) Gecko/20100101 Firefox/96.0',
   };
+  /// After YouTube rate-limits this IP, skip direct YouTube calls for a while
+  /// and use Piped instances (different IPs) instead.
+  static const Duration _rateLimitCooldown = Duration(minutes: 20);
+
   final YoutubeExplode yt = YoutubeExplode();
+  DateTime? _rateLimitedUntil;
 
   YouTubeServices._privateConstructor();
 
@@ -36,17 +41,45 @@ class YouTubeServices {
     return _instance;
   }
 
+  bool get _isRateLimited =>
+      _rateLimitedUntil != null && DateTime.now().isBefore(_rateLimitedUntil!);
+
+  void _markRateLimited([Object? error]) {
+    _rateLimitedUntil = DateTime.now().add(_rateLimitCooldown);
+    Logger.root.warning(
+      'YouTube rate limit detected${error != null ? ': $error' : ''}. '
+      'Using Piped instances (rotated IPs) until $_rateLimitedUntil',
+    );
+  }
+
+  bool _isRateLimitError(Object e) {
+    return e is RequestLimitExceededException ||
+        e.toString().contains('RequestLimitExceededException') ||
+        e.toString().contains('rate limiting') ||
+        e.toString().contains('too many requests');
+  }
+
   Future<List<Video>> getPlaylistSongs(String id) async {
     final List<Video> results = await yt.playlists.getVideos(id).toList();
     return results;
   }
 
   Future<Video?> getVideoFromId(String id) async {
+    if (_isRateLimited) {
+      Logger.root.info(
+        'Skipping youtube_explode getVideo for $id (rate-limit cooldown)',
+      );
+      return null;
+    }
     try {
       final Video result = await yt.videos.get(id);
       return result;
     } catch (e) {
-      Logger.root.severe('Error while getting video from id', e);
+      if (_isRateLimitError(e)) {
+        _markRateLimited(e);
+      } else {
+        Logger.root.severe('Error while getting video from id', e);
+      }
       return null;
     }
   }
@@ -56,27 +89,37 @@ class YouTubeServices {
     Map? data,
     bool? getUrl,
   }) async {
-    final Video? vid = await getVideoFromId(id);
-    if (vid == null) {
-      return null;
+    final quality = Hive.box('settings')
+        .get(
+          'ytQuality',
+          defaultValue: 'Low',
+        )
+        .toString();
+    final shouldGetUrl = getUrl ?? true;
+
+    if (!_isRateLimited) {
+      final Video? vid = await getVideoFromId(id);
+      if (vid != null) {
+        final Map? response = await formatVideo(
+          video: vid,
+          quality: quality,
+          data: data,
+          getUrl: shouldGetUrl,
+        );
+        if (response != null) return response;
+      }
     }
-    final Map? response = await formatVideo(
-      video: vid,
-      quality: Hive.box('settings')
-          .get(
-            'ytQuality',
-            defaultValue: 'Low',
-          )
-          .toString(),
-      data: data,
-      getUrl: getUrl ?? true,
-      // preferM4a: Hive.box(
-      //         'settings')
-      //     .get('preferM4a',
-      //         defaultValue:
-      //             true) as bool
+
+    // Rate limit / explode failure → Piped (rotating remote IPs)
+    Logger.root.info(
+      '[FORMAT] Falling back to Piped for $id (rateLimited=$_isRateLimited)',
     );
-    return response;
+    return _formatVideoFromPiped(
+      id: id,
+      quality: quality,
+      data: data,
+      getUrl: shouldGetUrl,
+    );
   }
 
   Future<Map?> refreshLink(String id, {bool useYTM = true}) async {
@@ -87,37 +130,53 @@ class YouTubeServices {
     } catch (e) {
       quality = 'Low';
     }
-    if (useYTM) {
+
+    // If YouTube already rate-limited this IP, skip direct calls → Piped first
+    if (_isRateLimited) {
+      Logger.root.info('[REFRESH] Rate-limited: Piped first for $id');
+      final piped = await _formatVideoFromPiped(
+        id: id,
+        quality: quality,
+        getUrl: true,
+      );
+      if (piped != null &&
+          piped['url'] != null &&
+          piped['url'].toString().isNotEmpty) {
+        return piped;
+      }
+    }
+
+    if (useYTM && !_isRateLimited) {
       final Map res = await YtMusicService().getSongData(
         videoId: id,
         quality: quality,
       );
-      if (res.isNotEmpty && res['url'] != null && res['url'].toString().isNotEmpty) {
+      if (res.isNotEmpty &&
+          res['url'] != null &&
+          res['url'].toString().isNotEmpty) {
         return res;
       }
     }
 
-    // Try youtube_explode_dart
-    final Video? res = await getVideoFromId(id);
-    if (res != null) {
-      final Map? data = await formatVideo(video: res, quality: quality);
-      if (data != null && data['url'] != null && data['url'].toString().isNotEmpty) {
-        return data;
+    if (!_isRateLimited) {
+      final Video? res = await getVideoFromId(id);
+      if (res != null) {
+        final Map? data = await formatVideo(video: res, quality: quality);
+        if (data != null &&
+            data['url'] != null &&
+            data['url'].toString().isNotEmpty) {
+          return data;
+        }
       }
     }
 
-    // Piped API as final fallback for refresh
     Logger.root.info('[REFRESH] Trying Piped API for refresh of $id');
-    final pipedUrls = await _getUriFromPipedFallback(id);
-    if (pipedUrls.isNotEmpty) {
-      final urlData = quality == 'High' ? pipedUrls.last : pipedUrls.first;
-      return {
-        'id': id,
-        'url': urlData['url'],
-        'expire_at': urlData['expireAt'],
-        'duration': '0',
-      };
-    }
+    final piped = await _formatVideoFromPiped(
+      id: id,
+      quality: quality,
+      getUrl: true,
+    );
+    if (piped != null) return piped;
 
     return null;
   }
@@ -529,6 +588,15 @@ class YouTubeServices {
     String videoId,
     // {bool preferM4a = true}
   ) async {
+    // When YouTube rate-limits this IP, skip direct calls and use Piped
+    // (each Piped instance is a different remote IP).
+    if (_isRateLimited) {
+      Logger.root.info(
+        'Rate-limit cooldown active — using Piped for streams of $videoId',
+      );
+      return await _getUriFromPipedFallback(videoId);
+    }
+
     // STRATEGY: Use youtube_explode_dart as PRIMARY method
     // It properly handles signature decryption which YouTube Music API doesn't
     // YouTube Music API returns encrypted signatures that cause 403 errors
@@ -542,6 +610,10 @@ class YouTubeServices {
       try {
         sortedStreamInfo = await getStreamInfo(videoId);
       } catch (e) {
+        if (_isRateLimitError(e)) {
+          _markRateLimited(e);
+          return await _getUriFromPipedFallback(videoId);
+        }
         if (e is TypeError) {
           Logger.root.severe(
             'TypeError caught in getUri for video $videoId.',
@@ -556,6 +628,9 @@ class YouTubeServices {
 
       if (sortedStreamInfo.isEmpty) {
         Logger.root.warning('No stream info found for video: $videoId');
+        if (_isRateLimited) {
+          return await _getUriFromPipedFallback(videoId);
+        }
         Logger.root.info(
             'Empty result fallback: trying YT Music API for video $videoId...');
         final ytMusicResult = await _getUriFromYtMusicFallback(videoId);
@@ -641,6 +716,10 @@ class YouTubeServices {
 
       return result;
     } catch (e) {
+      if (_isRateLimitError(e)) {
+        _markRateLimited(e);
+        return await _getUriFromPipedFallback(videoId);
+      }
       // If youtube_explode_dart fails, try YT Music API as fallback
       Logger.root.warning(
         'youtube_explode_dart failed for $videoId: $e. Trying YT Music API fallback...',
@@ -661,6 +740,13 @@ class YouTubeServices {
     bool onlyMp4 = false,
     int retryCount = 0,
   }) async {
+    if (_isRateLimited) {
+      Logger.root.info(
+        'Skipping getStreamInfo for $videoId (rate-limit cooldown)',
+      );
+      return [];
+    }
+
     const maxRetries = 4; // Increased retries for better recovery
     const retryDelaySeconds = [
       3,
@@ -750,6 +836,16 @@ class YouTubeServices {
               // Ignore errors when closing
             }
             ytClient = null;
+          }
+
+          // Rate limit: do NOT retry — more requests make the ban worse
+          if (_isRateLimitError(e)) {
+            _markRateLimited(e);
+            lastError = e is Exception ? e : Exception(e.toString());
+            Logger.root.warning(
+              'Rate limit on getManifest for $videoId — aborting retries',
+            );
+            break;
           }
 
           // Check if this is the specific null-to-Uri error or TypeError
@@ -1128,6 +1224,120 @@ class YouTubeServices {
       );
       Logger.root.severe('Stack trace: $stackTrace');
       return [];
+    }
+  }
+
+  Future<Map?> _formatVideoFromPiped({
+    required String id,
+    required String quality,
+    Map? data,
+    bool getUrl = true,
+  }) async {
+    try {
+      Logger.root.info('[PIPED] Formatting video $id via Piped instances');
+      final info = await PipedService.instance.getVideoInfo(id);
+      if (info == null) {
+        Logger.root.warning('[PIPED] No video info for $id');
+        // Still try streams-only if caller only needs a URL
+        if (!getUrl) return null;
+        final urlsOnly = await _getUriFromPipedFallback(id);
+        if (urlsOnly.isEmpty) return null;
+        final urlData = quality == 'High' ? urlsOnly.last : urlsOnly.first;
+        return {
+          'id': id,
+          'album': data?['album'] ?? '',
+          'duration': data?['duration']?.toString() ?? '0',
+          'title': data?['title'] ?? id,
+          'artist': data?['artist'] ?? '',
+          'image': data?['image'] ?? '',
+          'secondImage': data?['secondImage'] ?? data?['image'] ?? '',
+          'language': 'YouTube',
+          'genre': 'YouTube',
+          'expire_at': urlData['expireAt'],
+          'url': urlData['url'],
+          'allUrls': urlsOnly.map((e) => e['url']?.toString() ?? '').toList(),
+          'urlsData': urlsOnly,
+          'year': data?['year'] ?? '',
+          '320kbps': 'false',
+          'has_lyrics': 'false',
+          'release_date': '',
+          'album_id': '',
+          'subtitle': data?['subtitle'] ?? data?['artist'] ?? '',
+          'perma_url': 'https://www.youtube.com/watch?v=$id',
+        };
+      }
+
+      List<Map> urlsData = [];
+      String finalUrl = '';
+      String expireAt = '0';
+      List<String> allUrls = [];
+
+      if (getUrl) {
+        // Prefer streams from the same response to avoid a second request
+        urlsData = PipedService.instance.parseAudioStreams(info, id);
+        if (urlsData.isEmpty) {
+          urlsData = await PipedService.instance.getStreamUrls(id);
+        }
+        if (urlsData.isEmpty) {
+          Logger.root.warning('[PIPED] No stream URLs for $id');
+          return null;
+        }
+        final Map finalUrlData =
+            quality == 'High' ? urlsData.last : urlsData.first;
+        finalUrl = finalUrlData['url']?.toString() ?? '';
+        expireAt = finalUrlData['expireAt']?.toString() ?? '0';
+        allUrls = urlsData
+            .map((e) => e['url']?.toString() ?? '')
+            .where((url) => url.isNotEmpty)
+            .toList();
+
+        try {
+          await Hive.box('ytlinkcache').put(id, urlsData);
+        } catch (_) {}
+      }
+
+      final uploader =
+          (info['uploader'] ?? info['uploaderName'] ?? '').toString();
+      final title = (info['title'] ?? '').toString();
+      final duration = (info['duration'] ?? 0).toString();
+      final thumbnail = (info['thumbnailUrl'] ?? info['thumbnail'] ?? '')
+          .toString();
+      final uploadDate = (info['uploadDate'] ?? '').toString();
+
+      return {
+        'id': id,
+        'album': (data?['album'] ?? '') != ''
+            ? data!['album']
+            : uploader.replaceAll('- Topic', '').trim(),
+        'duration': duration,
+        'title': (data?['title'] ?? '') != '' ? data!['title'] : title.trim(),
+        'artist': (data?['artist'] ?? '') != ''
+            ? data!['artist']
+            : uploader.replaceAll('- Topic', '').trim(),
+        'image': thumbnail.isNotEmpty
+            ? thumbnail
+            : 'https://i.ytimg.com/vi/$id/maxresdefault.jpg',
+        'secondImage': thumbnail.isNotEmpty
+            ? thumbnail
+            : 'https://i.ytimg.com/vi/$id/hqdefault.jpg',
+        'language': 'YouTube',
+        'genre': 'YouTube',
+        'expire_at': expireAt,
+        'url': finalUrl,
+        'allUrls': allUrls,
+        'urlsData': urlsData,
+        'year': uploadDate.length >= 4 ? uploadDate.substring(0, 4) : '',
+        '320kbps': 'false',
+        'has_lyrics': 'false',
+        'release_date': uploadDate,
+        'album_id': (info['uploaderUrl'] ?? '').toString(),
+        'subtitle':
+            (data?['subtitle'] ?? '') != '' ? data!['subtitle'] : uploader,
+        'perma_url': 'https://www.youtube.com/watch?v=$id',
+      };
+    } catch (e) {
+      Logger.root.severe('[PIPED] formatVideo failed for $id: $e');
+      return null;
     }
   }
 

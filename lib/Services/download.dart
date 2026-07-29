@@ -15,7 +15,6 @@ import 'package:blackhole/localization/app_localizations.dart';
 import 'package:hive/hive.dart';
 import 'package:http/http.dart';
 import 'package:logging/logging.dart';
-import 'package:metadata_god/metadata_god.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:youtube_explode_dart/youtube_explode_dart.dart';
@@ -429,57 +428,28 @@ class Download with ChangeNotifier {
           lyrics = '';
         }
         Logger.root.info('Getting audio tags');
-        if (Platform.isAndroid) {
-          try {
-            final Tag tag = Tag(
-              title: data['title'].toString(),
-              artist: data['artist'].toString(),
-              albumArtist: data['album_artist']?.toString() ??
-                  data['artist']?.toString().split(', ')[0] ??
-                  '',
-              artwork: filepath2,
-              album: data['album'].toString(),
-              genre: data['language'].toString(),
-              year: data['year'].toString(),
-              lyrics: lyrics,
-              comment: 'Cloud Spot',
-            );
-            Logger.root.info('Started tag editing');
-            final tagger = Audiotagger();
-            await tagger.writeTags(
-              path: filepath!,
-              tag: tag,
-            );
-          } catch (e) {
-            Logger.root.severe('Error editing tags: $e');
-          }
-        } else {
-          // Set metadata to file
-          if (data['language'].toString() == 'YouTube') {
-            Logger.root.info('Started tag editing');
-            // skipping metadata for saavn for the time being as it corrupts the file
-            await MetadataGod.writeMetadata(
-              file: filepath!,
-              metadata: Metadata(
-                title: data['title'].toString(),
-                artist: data['artist'].toString(),
-                albumArtist: data['album_artist']?.toString() ??
-                    data['artist']?.toString().split(', ')[0] ??
-                    '',
-                album: data['album'].toString(),
-                genre: data['language'].toString(),
-                year: ['', 'null'].contains(data['year'].toString())
-                    ? null
-                    : int.parse(data['year'].toString()),
-                durationMs: int.parse(data['duration'].toString()) * 1000,
-                fileSize: file.lengthSync(),
-                picture: Picture(
-                  data: bytes2,
-                  mimeType: 'image/jpeg',
-                ),
-              ),
-            );
-          }
+        try {
+          final Tag tag = Tag(
+            title: data['title'].toString(),
+            artist: data['artist'].toString(),
+            albumArtist: data['album_artist']?.toString() ??
+                data['artist']?.toString().split(', ')[0] ??
+                '',
+            artwork: filepath2,
+            album: data['album'].toString(),
+            genre: data['language'].toString(),
+            year: data['year'].toString(),
+            lyrics: lyrics,
+            comment: 'Cloud Spot',
+          );
+          Logger.root.info('Started tag editing');
+          final tagger = Audiotagger();
+          await tagger.writeTags(
+            path: filepath!,
+            tag: tag,
+          );
+        } catch (e) {
+          Logger.root.severe('Error editing tags: $e');
         }
         Logger.root.info('Closing connection & notifying listeners');
         client.close();

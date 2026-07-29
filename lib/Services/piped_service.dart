@@ -3,11 +3,16 @@ import 'dart:math';
 import 'package:http/http.dart' as http;
 import 'package:logging/logging.dart';
 
+/// Fetches YouTube streams via public Piped API instances.
+/// Each instance runs on a different IP, so rotating them avoids
+/// the device's local IP being rate-limited by YouTube.
 class PipedService {
   static final PipedService _instance = PipedService._();
   static PipedService get instance => _instance;
   PipedService._();
 
+  /// Public Piped API hosts (different servers / IPs).
+  /// Dead hosts are skipped automatically on failure.
   static const List<String> _pipedInstances = [
     'pipedapi.kavin.rocks',
     'pipedapi.adminforge.de',
@@ -17,6 +22,10 @@ class PipedService {
     'piped-api.lunar.icu',
     'pa.mint.lgbt',
     'api.piped.yt',
+    'pipedapi.palveluntarjoaja.eu',
+    'piped-api.privacy.com.de',
+    'api.piped.private.coffee',
+    'pipedapi.nosebs.ru',
   ];
 
   int _currentInstance = 0;
@@ -32,23 +41,74 @@ class PipedService {
     _currentInstance = _random.nextInt(_pipedInstances.length);
   }
 
+  /// Parse audioStreams from a Piped /streams response into app URL maps.
+  List<Map> parseAudioStreams(Map data, [String? videoId]) {
+    final List audioStreams = (data['audioStreams'] as List?) ?? [];
+    if (audioStreams.isEmpty) return [];
+
+    final List<Map> result = [];
+    for (final stream in audioStreams) {
+      final streamUrl = stream['url']?.toString();
+      if (streamUrl == null || streamUrl.isEmpty) continue;
+
+      final bitrate = stream['bitrate'] ?? 0;
+      final mimeType = stream['mimeType']?.toString() ?? '';
+      final codec = mimeType.contains('mp4')
+          ? 'mp4a'
+          : (mimeType.contains('webm') ? 'opus' : 'unknown');
+      final quality = stream['quality']?.toString() ?? 'unknown';
+      final contentLength = stream['contentLength'] ?? 0;
+      final sizeMB =
+          (contentLength is int ? contentLength : 0) / (1024 * 1024);
+
+      String expireAt;
+      try {
+        expireAt = RegExp('expire=(.*?)&').firstMatch(streamUrl)?.group(1) ??
+            (DateTime.now().millisecondsSinceEpoch ~/ 1000 + 3600).toString();
+      } catch (_) {
+        expireAt =
+            (DateTime.now().millisecondsSinceEpoch ~/ 1000 + 3600).toString();
+      }
+
+      result.add({
+        'bitrate': (bitrate is int ? bitrate ~/ 1000 : 0).toString(),
+        'codec': codec,
+        'qualityLabel': quality,
+        'size': sizeMB.toStringAsFixed(2),
+        'url': streamUrl,
+        'expireAt': expireAt,
+      });
+    }
+
+    result.sort((a, b) {
+      final bitrateA = int.tryParse(a['bitrate'].toString()) ?? 0;
+      final bitrateB = int.tryParse(b['bitrate'].toString()) ?? 0;
+      return bitrateA.compareTo(bitrateB);
+    });
+    return result;
+  }
+
   Future<List<Map>> getStreamUrls(String videoId) async {
     _randomizeInstance();
 
     for (int attempt = 0; attempt < _pipedInstances.length; attempt++) {
       try {
         final url = 'https://$_baseUrl/streams/$videoId';
-        Logger.root.info('[PIPED] Trying instance: $_baseUrl for video $videoId');
+        Logger.root
+            .info('[PIPED] Trying instance: $_baseUrl for video $videoId');
 
         final response = await http.get(
           Uri.parse(url),
           headers: {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+            'User-Agent':
+                'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+            'Accept': 'application/json',
           },
-        ).timeout(const Duration(seconds: 15));
+        ).timeout(const Duration(seconds: 12));
 
         if (response.statusCode != 200) {
-          Logger.root.warning('[PIPED] Instance $_baseUrl returned ${response.statusCode}');
+          Logger.root.warning(
+              '[PIPED] Instance $_baseUrl returned ${response.statusCode}');
           _rotateInstance();
           continue;
         }
@@ -56,57 +116,21 @@ class PipedService {
         final data = json.decode(response.body) as Map;
 
         if (data.containsKey('error')) {
-          Logger.root.warning('[PIPED] Error from $_baseUrl: ${data['error']}');
+          Logger.root
+              .warning('[PIPED] Error from $_baseUrl: ${data['error']}');
           _rotateInstance();
           continue;
         }
 
-        final List audioStreams = (data['audioStreams'] as List?) ?? [];
-        if (audioStreams.isEmpty) {
+        final result = parseAudioStreams(data, videoId);
+        if (result.isEmpty) {
           Logger.root.warning('[PIPED] No audio streams from $_baseUrl');
           _rotateInstance();
           continue;
         }
 
-        final List<Map> result = [];
-        for (final stream in audioStreams) {
-          final streamUrl = stream['url']?.toString();
-          if (streamUrl == null || streamUrl.isEmpty) continue;
-
-          final bitrate = stream['bitrate'] ?? 0;
-          final mimeType = stream['mimeType']?.toString() ?? '';
-          final codec = mimeType.contains('mp4')
-              ? 'mp4a'
-              : (mimeType.contains('webm') ? 'opus' : 'unknown');
-          final quality = stream['quality']?.toString() ?? 'unknown';
-          final contentLength = stream['contentLength'] ?? 0;
-          final sizeMB = (contentLength is int ? contentLength : 0) / (1024 * 1024);
-
-          String expireAt;
-          try {
-            expireAt = RegExp('expire=(.*?)&').firstMatch(streamUrl)?.group(1) ??
-                (DateTime.now().millisecondsSinceEpoch ~/ 1000 + 3600).toString();
-          } catch (_) {
-            expireAt = (DateTime.now().millisecondsSinceEpoch ~/ 1000 + 3600).toString();
-          }
-
-          result.add({
-            'bitrate': (bitrate ~/ 1000).toString(),
-            'codec': codec,
-            'qualityLabel': quality,
-            'size': sizeMB.toStringAsFixed(2),
-            'url': streamUrl,
-            'expireAt': expireAt,
-          });
-        }
-
-        result.sort((a, b) {
-          final bitrateA = int.tryParse(a['bitrate'].toString()) ?? 0;
-          final bitrateB = int.tryParse(b['bitrate'].toString()) ?? 0;
-          return bitrateA.compareTo(bitrateB);
-        });
-
-        Logger.root.info('[PIPED] Got ${result.length} audio streams from $_baseUrl');
+        Logger.root
+            .info('[PIPED] Got ${result.length} audio streams from $_baseUrl');
         return result;
       } catch (e) {
         Logger.root.warning('[PIPED] Instance $_baseUrl failed: $e');
@@ -125,12 +149,16 @@ class PipedService {
     for (int attempt = 0; attempt < _pipedInstances.length; attempt++) {
       try {
         final url = 'https://$_baseUrl/streams/$videoId';
+        Logger.root.info('[PIPED] Video info via $_baseUrl for $videoId');
+
         final response = await http.get(
           Uri.parse(url),
           headers: {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+            'User-Agent':
+                'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+            'Accept': 'application/json',
           },
-        ).timeout(const Duration(seconds: 15));
+        ).timeout(const Duration(seconds: 12));
 
         if (response.statusCode != 200) {
           _rotateInstance();
@@ -145,6 +173,7 @@ class PipedService {
 
         return data;
       } catch (e) {
+        Logger.root.warning('[PIPED] getVideoInfo $_baseUrl failed: $e');
         _rotateInstance();
         continue;
       }
