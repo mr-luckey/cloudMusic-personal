@@ -4,6 +4,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:blackhole/Services/piped_service.dart';
 import 'package:blackhole/Services/yt_music.dart';
 import 'package:blackhole/Services/ytmusic/nav.dart';
 import 'package:hive_flutter/hive_flutter.dart';
@@ -91,14 +92,34 @@ class YouTubeServices {
         videoId: id,
         quality: quality,
       );
-      return res;
+      if (res.isNotEmpty && res['url'] != null && res['url'].toString().isNotEmpty) {
+        return res;
+      }
     }
+
+    // Try youtube_explode_dart
     final Video? res = await getVideoFromId(id);
-    if (res == null) {
-      return null;
+    if (res != null) {
+      final Map? data = await formatVideo(video: res, quality: quality);
+      if (data != null && data['url'] != null && data['url'].toString().isNotEmpty) {
+        return data;
+      }
     }
-    final Map? data = await formatVideo(video: res, quality: quality);
-    return data;
+
+    // Piped API as final fallback for refresh
+    Logger.root.info('[REFRESH] Trying Piped API for refresh of $id');
+    final pipedUrls = await _getUriFromPipedFallback(id);
+    if (pipedUrls.isNotEmpty) {
+      final urlData = quality == 'High' ? pipedUrls.last : pipedUrls.first;
+      return {
+        'id': id,
+        'url': urlData['url'],
+        'expire_at': urlData['expireAt'],
+        'duration': '0',
+      };
+    }
+
+    return null;
   }
 
   Future<Playlist> getPlaylistDetails(String id) async {
@@ -419,8 +440,7 @@ class YouTubeServices {
 
   String getExpireAt(String url) {
     return RegExp('expire=(.*?)&').firstMatch(url)!.group(1) ??
-        (DateTime.now().millisecondsSinceEpoch ~/ 1000000 + 3600 * 5.5)
-            .toString();
+        (DateTime.now().millisecondsSinceEpoch ~/ 1000 + 3600).toString();
   }
 
   Future<List<Map>> getYtStreamUrls(String videoId) async {
@@ -443,7 +463,7 @@ class YouTubeServices {
             }
           }
 
-          final currentTime = DateTime.now().millisecondsSinceEpoch ~/ 1000000;
+          final currentTime = DateTime.now().millisecondsSinceEpoch ~/ 1000;
           final timeUntilExpiry = minExpiredAt - (currentTime + 350);
           print(
               '⏰ [VIDEO->AUDIO] Cache expiry check - Current: $currentTime, Expires: $minExpiredAt, Time left: ${timeUntilExpiry}s');
@@ -522,16 +542,14 @@ class YouTubeServices {
       try {
         sortedStreamInfo = await getStreamInfo(videoId);
       } catch (e) {
-        // Catch TypeError specifically from youtube_explode_dart
         if (e is TypeError) {
           Logger.root.severe(
-            'TypeError caught in getUri for video $videoId. This is likely a bug in youtube_explode_dart package.',
+            'TypeError caught in getUri for video $videoId.',
             e,
           );
-          Logger.root.info(
-            'TypeError fallback: trying YT Music API for video $videoId...',
-          );
-          return await _getUriFromYtMusicFallback(videoId);
+          final ytMusicResult = await _getUriFromYtMusicFallback(videoId);
+          if (ytMusicResult.isNotEmpty) return ytMusicResult;
+          return await _getUriFromPipedFallback(videoId);
         }
         rethrow;
       }
@@ -540,7 +558,11 @@ class YouTubeServices {
         Logger.root.warning('No stream info found for video: $videoId');
         Logger.root.info(
             'Empty result fallback: trying YT Music API for video $videoId...');
-        return await _getUriFromYtMusicFallback(videoId);
+        final ytMusicResult = await _getUriFromYtMusicFallback(videoId);
+        if (ytMusicResult.isNotEmpty) return ytMusicResult;
+        Logger.root.info(
+            'YT Music API empty, trying Piped API for video $videoId...');
+        return await _getUriFromPipedFallback(videoId);
       }
 
       print(
@@ -623,7 +645,14 @@ class YouTubeServices {
       Logger.root.warning(
         'youtube_explode_dart failed for $videoId: $e. Trying YT Music API fallback...',
       );
-      return await _getUriFromYtMusicFallback(videoId);
+      final ytMusicResult = await _getUriFromYtMusicFallback(videoId);
+      if (ytMusicResult.isNotEmpty) return ytMusicResult;
+
+      // If YT Music API also fails, try Piped API as final fallback
+      Logger.root.warning(
+        'YT Music API also failed for $videoId. Trying Piped API fallback...',
+      );
+      return await _getUriFromPipedFallback(videoId);
     }
   }
 
@@ -1098,6 +1127,27 @@ class YouTubeServices {
         'Error in YT Music API fallback for video $videoId: $e',
       );
       Logger.root.severe('Stack trace: $stackTrace');
+      return [];
+    }
+  }
+
+  Future<List<Map>> _getUriFromPipedFallback(String videoId) async {
+    try {
+      Logger.root.info('[PIPED FALLBACK] Trying Piped API for video $videoId');
+      print('🔄 [PIPED] Attempting Piped API fallback for video $videoId');
+      final result = await PipedService.instance.getStreamUrls(videoId);
+      if (result.isNotEmpty) {
+        print('✅ [PIPED] Got ${result.length} audio streams from Piped API');
+        Logger.root.info(
+          'Successfully got ${result.length} streams from Piped API for $videoId',
+        );
+      } else {
+        print('❌ [PIPED] No audio streams from Piped API');
+      }
+      return result;
+    } catch (e) {
+      Logger.root.severe('Error in Piped API fallback for $videoId: $e');
+      print('❌ [PIPED] Piped API fallback failed: $e');
       return [];
     }
   }

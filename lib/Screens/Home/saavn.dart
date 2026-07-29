@@ -20,17 +20,15 @@ import 'package:blackhole/Screens/Common/song_list.dart';
 import 'package:blackhole/Screens/Library/liked.dart';
 import 'package:blackhole/Screens/Search/artists.dart';
 import 'package:blackhole/Services/player_service.dart';
+import 'package:blackhole/bloc/saavn_home/saavn_home_bloc.dart';
 import 'package:flutter/material.dart';
 import 'package:blackhole/localization/app_localizations.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
 bool fetched = false;
 List preferredLanguage = Hive.box('settings')
     .get('preferredLanguage', defaultValue: ['Hindi']) as List;
-List likedRadio =
-    Hive.box('settings').get('likedRadio', defaultValue: []) as List;
-Map data = Hive.box('cache').get('homepage', defaultValue: {}) as Map;
-List lists = ['recent', 'playlist', ...?data['collections'] as List?];
 
 class SaavnHomePage extends StatefulWidget {
   @override
@@ -40,38 +38,7 @@ class SaavnHomePage extends StatefulWidget {
 class _SaavnHomePageState extends State<SaavnHomePage>
     with AutomaticKeepAliveClientMixin<SaavnHomePage> {
   // final BannerController controller = Get.put(BannerController());
-  List recentList =
-      Hive.box('cache').get('recentSongs', defaultValue: []) as List;
-  Map likedArtists =
-      Hive.box('settings').get('likedArtists', defaultValue: {}) as Map;
-  List blacklistedHomeSections = Hive.box('settings')
-      .get('blacklistedHomeSections', defaultValue: []) as List;
-  List playlistNames =
-      Hive.box('settings').get('playlistNames')?.toList() as List? ??
-          ['Favorite Songs'];
-  Map playlistDetails =
-      Hive.box('settings').get('playlistDetails', defaultValue: {}) as Map;
-  int recentIndex = 0;
-  int playlistIndex = 1;
-
-  Future<void> getHomePageData() async {
-    Map recievedData = await SaavnAPI().fetchHomePageData();
-    if (recievedData.isNotEmpty) {
-      Hive.box('cache').put('homepage', recievedData);
-      data = recievedData;
-      lists = ['recent', 'playlist', ...?data['collections'] as List?];
-      lists.insert((lists.length / 2).round(), 'likedArtists');
-    }
-    setState(() {});
-    recievedData = await FormatResponse.formatPromoLists(data);
-    if (recievedData.isNotEmpty) {
-      Hive.box('cache').put('homepage', recievedData);
-      data = recievedData;
-      lists = ['recent', 'playlist', ...?data['collections'] as List?];
-      lists.insert((lists.length / 2).round(), 'likedArtists');
-    }
-    setState(() {});
-  }
+  late final SaavnHomeBloc _bloc;
 
   String getSubTitle(Map item) {
     final type = item['type'];
@@ -114,12 +81,47 @@ class _SaavnHomePageState extends State<SaavnHomePage>
   bool get wantKeepAlive => true;
 
   @override
+  void initState() {
+    super.initState();
+    _bloc = SaavnHomeBloc();
+    if (!fetched) {
+      _bloc.add(const SaavnHomeLoadRequested());
+      fetched = true;
+    }
+  }
+
+  @override
+  void dispose() {
+    _bloc.close();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     super.build(context);
     if (!fetched) {
-      getHomePageData();
+      _bloc.add(const SaavnHomeLoadRequested());
       fetched = true;
     }
+    return BlocBuilder<SaavnHomeBloc, SaavnHomeState>(
+      bloc: _bloc,
+      builder: (context, state) {
+        return _buildContent(context, state);
+      },
+    );
+  }
+
+  Widget _buildContent(BuildContext context, SaavnHomeState state) {
+    final data = state.data;
+    final lists = state.lists;
+    final recentList = state.recentList;
+    final likedArtists = state.likedArtists;
+    final blacklistedHomeSections = state.blacklistedHomeSections;
+    final playlistNames = state.playlistNames;
+    final playlistDetails = state.playlistDetails;
+    final likedRadio = state.likedRadio;
+    int recentIndex = 0;
+    int playlistIndex = 1;
     double boxSize =
         MediaQuery.sizeOf(context).height > MediaQuery.sizeOf(context).width
             ? MediaQuery.sizeOf(context).width / 2
@@ -505,17 +507,15 @@ class _SaavnHomePageState extends State<SaavnHomePage>
                                             ),
                                             onPressed: () async {
                                               Navigator.pop(context);
-                                              blacklistedHomeSections.add(
-                                                data['modules'][lists[idx]]
-                                                        ?['title']
-                                                    ?.toString()
-                                                    .toLowerCase(),
+                                              _bloc.add(
+                                                SaavnHomeSectionBlacklisted(
+                                                  data['modules'][lists[idx]]
+                                                          ?['title']
+                                                      ?.toString()
+                                                      .toLowerCase() ??
+                                                      '',
+                                                ),
                                               );
-                                              Hive.box('settings').put(
-                                                'blacklistedHomeSections',
-                                                blacklistedHomeSections,
-                                              );
-                                              setState(() {});
                                             },
                                             child: Text(
                                               AppLocalizations.of(
@@ -831,19 +831,11 @@ class _SaavnHomePageState extends State<SaavnHomePage>
                                                               )!
                                                                 .like,
                                                         onPressed: () {
-                                                          likedRadio.contains(
-                                                            item,
-                                                          )
-                                                              ? likedRadio
-                                                                  .remove(item)
-                                                              : likedRadio
-                                                                  .add(item);
-                                                          Hive.box('settings')
-                                                              .put(
-                                                            'likedRadio',
-                                                            likedRadio,
+                                                          _bloc.add(
+                                                            SaavnHomeLikedRadioToggled(
+                                                              item,
+                                                            ),
                                                           );
-                                                          setState(() {});
                                                         },
                                                       ),
                                                     ),

@@ -9,6 +9,7 @@ import 'package:blackhole/Helpers/mediaitem_converter.dart';
 import 'package:blackhole/Helpers/playlist.dart';
 import 'package:blackhole/Screens/Player/audioplayer.dart';
 import 'package:blackhole/Services/isolate_service.dart';
+import 'package:blackhole/Services/youtube_services.dart';
 import 'package:blackhole/Services/yt_music.dart';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
@@ -19,70 +20,144 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:logging/logging.dart';
 import 'package:rxdart/rxdart.dart';
+import 'package:youtube_explode_dart/youtube_explode_dart.dart';
 
-/// Custom StreamAudioSource that proxies YouTube streams through Dart
-/// This bypasses ExoPlayer's HTTP client which causes 403 errors
-class YouTubeAudioSource extends StreamAudioSource {
-  final Uri uri;
-  final Map<String, String> headers;
+/// Streams YouTube audio using fresh manifest URLs with HTTP Range requests.
+/// Falls back to youtube_explode_dart stream client if direct fetch fails.
+class YouTubeExplodeStreamSource extends StreamAudioSource {
+  static const _maxChunkBytes = 256 * 1024;
+  static final Map<String, Future<AudioOnlyStreamInfo>> _streamInfoCache = {};
+
+  final String videoId;
   final String? tag;
+  late final Future<AudioOnlyStreamInfo> _streamInfoFuture;
 
-  YouTubeAudioSource(this.uri, {this.headers = const {}, this.tag});
+  YouTubeExplodeStreamSource({required this.videoId, this.tag}) {
+    _streamInfoFuture = _loadStreamInfo();
+  }
+
+  Future<AudioOnlyStreamInfo> _loadStreamInfo() {
+    return _streamInfoCache.putIfAbsent(videoId, () async {
+      final streams = await YouTubeServices.instance.getStreamInfo(
+        videoId,
+        onlyMp4: Platform.isAndroid || Platform.isIOS,
+      );
+      if (streams.isEmpty) {
+        throw Exception('No audio streams for video $videoId');
+      }
+      return streams.last;
+    });
+  }
+
+  Future<AudioOnlyStreamInfo> _infoForRange(int rangeStart) async {
+    // googlevideo URLs go stale mid-stream; refresh for non-zero ranges.
+    if (rangeStart > 0) {
+      _streamInfoCache.remove(videoId);
+      return _loadStreamInfo();
+    }
+    return _streamInfoFuture;
+  }
+
+  Future<http.Response> _fetchRange(
+    AudioOnlyStreamInfo info,
+    int rangeStart,
+    int rangeEnd,
+  ) {
+    return http.get(
+      info.url,
+      headers: _rangeHeaders(rangeStart, rangeEnd),
+    );
+  }
+
+  Map<String, String> _rangeHeaders(int rangeStart, int rangeEndExclusive) {
+    return {
+      'User-Agent': Platform.isAndroid
+          ? 'Mozilla/5.0 (Linux; Android 14; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Mobile Safari/537.36'
+          : 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+      'Accept': '*/*',
+      'Accept-Language': 'en-US,en;q=0.9',
+      'Accept-Encoding': 'identity',
+      'Referer': 'https://www.youtube.com/',
+      'Origin': 'https://www.youtube.com',
+      'Range': 'bytes=$rangeStart-${rangeEndExclusive - 1}',
+      'Connection': 'keep-alive',
+    };
+  }
+
+  Stream<List<int>> _slice(Stream<List<int>> source, int start, int end) async* {
+    var position = 0;
+    await for (final chunk in source) {
+      final chunkStart = position;
+      final chunkEnd = position + chunk.length;
+      position = chunkEnd;
+      if (chunkEnd <= start) continue;
+
+      var data = chunk;
+      final emitStart = chunkStart < start ? start : chunkStart;
+      if (chunkStart < start) {
+        data = chunk.sublist(start - chunkStart);
+      }
+      final maxLen = end - emitStart;
+      if (data.length > maxLen) {
+        yield data.sublist(0, maxLen);
+        return;
+      }
+      yield data;
+      if (position >= end) return;
+    }
+  }
+
+  int _rangeEnd(int rangeStart, int? end, int totalBytes) {
+    if (end != null) return end;
+    final capped = rangeStart + _maxChunkBytes;
+    return capped > totalBytes ? totalBytes : capped;
+  }
 
   @override
   Future<StreamAudioResponse> request([int? start, int? end]) async {
-    print('🌐 [YOUTUBE PROXY] Requesting range: $start-$end');
+    final rangeStart = start ?? 0;
+    var info = await _infoForRange(rangeStart);
+    final totalBytes = info.size.totalBytes;
+    final rangeEnd = _rangeEnd(rangeStart, end, totalBytes);
 
-    // Add range header if specified
-    final requestHeaders = Map<String, String>.from(headers);
-    if (start != null || end != null) {
-      final rangeStart = start ?? 0;
-      final rangeEnd = end != null ? end - 1 : '';
-      requestHeaders['Range'] = 'bytes=$rangeStart-$rangeEnd';
-    }
+    print(
+        '🎵 [YOUTUBE EXPLODE] $videoId bytes $rangeStart-$rangeEnd (total: $totalBytes)');
 
     try {
-      final response = await http.get(uri, headers: requestHeaders);
-      print('🌐 [YOUTUBE PROXY] Response status: ${response.statusCode}');
+      var response = await _fetchRange(info, rangeStart, rangeEnd);
+      if (response.statusCode == 403) {
+        _streamInfoCache.remove(videoId);
+        info = await _loadStreamInfo();
+        response = await _fetchRange(info, rangeStart, rangeEnd);
+      }
+      print(
+          '🎵 [YOUTUBE EXPLODE] HTTP ${response.statusCode}, ${response.bodyBytes.length} bytes');
 
       if (response.statusCode == 200 || response.statusCode == 206) {
-        // Parse content range to get total length
-        int? sourceLength;
-        final contentRange = response.headers['content-range'];
-        if (contentRange != null) {
-          final match =
-              RegExp(r'bytes (\d+)-(\d+)/(\d+)').firstMatch(contentRange);
-          if (match != null) {
-            sourceLength = int.parse(match.group(3)!);
-          }
-        } else {
-          // If no content-range, use content-length
-          final contentLength = response.headers['content-length'];
-          if (contentLength != null) {
-            sourceLength = int.parse(contentLength);
-          }
-        }
-
-        print('🌐 [YOUTUBE PROXY] Content length: $sourceLength bytes');
-        print(
-            '🌐 [YOUTUBE PROXY] Response body size: ${response.bodyBytes.length} bytes');
-
         return StreamAudioResponse(
-          sourceLength: sourceLength,
+          sourceLength: totalBytes,
           contentLength: response.bodyBytes.length,
-          offset: start ?? 0,
+          offset: rangeStart,
           stream: Stream.value(response.bodyBytes),
-          contentType: response.headers['content-type'] ?? 'audio/mp4',
+          contentType: 'audio/${info.container.name}',
         );
-      } else {
-        print('❌ [YOUTUBE PROXY] HTTP error: ${response.statusCode}');
-        print('❌ [YOUTUBE PROXY] Response headers: ${response.headers}');
-        throw Exception('HTTP Status Error: ${response.statusCode}');
       }
+      print(
+          '❌ [YOUTUBE EXPLODE] HTTP ${response.statusCode}, using stream client fallback');
     } catch (e) {
-      print('❌ [YOUTUBE PROXY] Request failed: $e');
-      rethrow;
+      print('❌ [YOUTUBE EXPLODE] HTTP failed: $e, using stream client fallback');
     }
+
+    final rawStream = YouTubeServices.instance.getStreamClient(info);
+    final stream = _slice(rawStream, rangeStart, rangeEnd);
+
+    return StreamAudioResponse(
+      sourceLength: totalBytes,
+      contentLength: rangeEnd - rangeStart,
+      offset: rangeStart,
+      stream: stream,
+      contentType: 'audio/${info.container.name}',
+    );
   }
 }
 
@@ -656,23 +731,23 @@ class AudioPlayerHandlerImpl extends BaseAudioHandler
 
             // If URL is expired and we're not skipping refresh, fetch a fresh one NOW
             if (shouldRefreshUrl && !skipRefresh) {
-              print('🔄 [DEBUG] Fetching fresh URL from YouTube API...');
+              print('🔄 [DEBUG] Fetching fresh URL...');
               try {
-                final freshData = await YtMusicService().getSongData(
-                  videoId: mediaItem.id,
-                  quality: preferredQuality,
-                );
+                final refreshResult = await YouTubeServices.instance
+                    .refreshLink(mediaItem.id);
 
-                if (freshData.isNotEmpty && freshData['url'] != null) {
-                  urlToUse = freshData['url'].toString();
+                if (refreshResult != null &&
+                    refreshResult['url'] != null &&
+                    refreshResult['url'].toString().isNotEmpty) {
+                  urlToUse = refreshResult['url'].toString();
                   mediaItem.extras!['url'] = urlToUse;
                   mediaItem.extras!['expire_at'] =
-                      freshData['expire_at'].toString();
-                  shouldRefreshUrl = false; // We now have a fresh URL
+                      (refreshResult['expire_at'] ?? '0').toString();
+                  shouldRefreshUrl = false;
                   print(
-                      '✅ [DEBUG] Got fresh URL! Expires: ${freshData['expire_at']}');
+                      '✅ [DEBUG] Got fresh URL! Expires: ${refreshResult['expire_at']}');
                 } else {
-                  print('❌ [DEBUG] Failed to get fresh URL from API');
+                  print('❌ [DEBUG] Failed to get fresh URL from all sources');
                   return null;
                 }
               } catch (e) {
@@ -694,22 +769,14 @@ class AudioPlayerHandlerImpl extends BaseAudioHandler
               // Mark as validated
               _validatedUrls[urlToUse] = DateTime.now();
 
-              // Use LockCachingAudioSource to stream and cache directly
-              // Now that we have valid URLs from youtube_explode_dart (decrypted signatures),
-              // we don't need the custom proxy anymore.
               try {
-                audioSource = LockCachingAudioSource(
-                  Uri.parse(urlToUse),
+                audioSource = YouTubeExplodeStreamSource(
+                  videoId: mediaItem.id,
                   tag: mediaItem.id,
-                  headers: {
-                    'User-Agent':
-                        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
-                    'Referer': 'https://www.youtube.com/',
-                  },
                 );
                 _mediaItemExpando[audioSource] = mediaItem;
                 print(
-                    '✅ [STREAM] Audio source created successfully (Direct Stream)!');
+                    '✅ [STREAM] Audio source created (youtube_explode stream)!');
                 return audioSource;
               } catch (e) {
                 print('❌ [STREAM] Error creating audio source: $e');

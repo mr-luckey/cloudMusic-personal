@@ -247,9 +247,18 @@ class PlayerInvoke {
     final Map playItem = response[index] as Map;
     final bool isYouTube = playItem['genre'] == 'YouTube';
 
-    // Refresh the clicked item's YouTube link if needed
+    // Refresh the clicked item's YouTube link if needed (always fetch fresh URL on play)
     if (playItem['genre'] == 'YouTube') {
-      await refreshYtLink(playItem);
+      await Hive.box('ytlinkcache').delete(playItem['id']);
+      final fresh = await YouTubeServices.instance
+          .formatVideoFromId(id: playItem['id'].toString(), data: playItem);
+      if (fresh != null) {
+        playItem['url'] = fresh['url'];
+        playItem['duration'] = fresh['duration'];
+        playItem['expire_at'] = fresh['expire_at'];
+      } else {
+        await refreshYtLink(playItem);
+      }
     }
 
     // FOR YOUTUBE: Only add the clicked song (no queue, just the single song)

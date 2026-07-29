@@ -12,10 +12,12 @@ import 'package:blackhole/Screens/Library/library.dart';
 import 'package:blackhole/Screens/LocalMusic/homeScreen_song.dart';
 import 'package:blackhole/Screens/Settings/new_settings_page.dart';
 import 'package:blackhole/Screens/YouTube/youtube_home.dart';
+import 'package:blackhole/bloc/home/home_bloc.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:blackhole/localization/app_localizations.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:persistent_bottom_nav_bar/persistent_bottom_nav_bar.dart';
 // import 'package:persistent_bottom_nav_bar/persistent_tab_view.dart';
@@ -29,7 +31,7 @@ class _HomePageState extends State<HomePage> {
   Timer? _timer;
   PersistentTabController _controller =
       PersistentTabController(initialIndex: 0);
-  final ValueNotifier<int> _selectedIndex = ValueNotifier<int>(0);
+  late final HomeBloc _bloc;
   final PageController _pageController = PageController();
   String? appVersion;
   String name =
@@ -49,12 +51,7 @@ class _HomePageState extends State<HomePage> {
   ) as bool;
 
   void callback() {
-    sectionsToShow = Hive.box('settings').get(
-      'sectionsToShow',
-      defaultValue: ['Home', 'YouTube', 'Library', 'Settings'],
-    ) as List;
-    onItemTapped(0);
-    setState(() {});
+    _bloc.add(const HomeSettingsUpdated());
   }
 
   // void _startAdTimer() {
@@ -67,12 +64,12 @@ class _HomePageState extends State<HomePage> {
   // }
 
   void onItemTapped(int index) {
-    _selectedIndex.value = index;
-    _controller.jumpToTab(index);
+    _bloc.add(HomeTabSelected(index));
   }
 
   @override
   void initState() {
+    _bloc = HomeBloc();
     // AdManager().initialize();
     // AdManager.showInterstitialAd();
     // _startAdTimer();
@@ -83,6 +80,7 @@ class _HomePageState extends State<HomePage> {
 
   @override
   void dispose() {
+    _bloc.close();
     _controller.dispose();
     _timer?.cancel();
     _pageController.dispose();
@@ -133,29 +131,36 @@ class _HomePageState extends State<HomePage> {
     final double screenWidth = MediaQuery.sizeOf(context).width;
     final bool rotated = MediaQuery.sizeOf(context).height < screenWidth;
     final miniplayer = MiniPlayer();
-    return GradientContainer(
-      child: Scaffold(
-        appBar: AppBar(
-          toolbarHeight: 0,
+    return BlocListener<HomeBloc, HomeState>(
+      bloc: _bloc,
+      listenWhen: (previous, current) =>
+          previous.selectedIndex != current.selectedIndex,
+      listener: (context, state) {
+        _controller.jumpToTab(state.selectedIndex);
+      },
+      child: GradientContainer(
+        child: Scaffold(
+          appBar: AppBar(
+            toolbarHeight: 0,
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+          ),
+          extendBodyBehindAppBar: true,
+          resizeToAvoidBottomInset: false,
           backgroundColor: Colors.transparent,
-          elevation: 0,
-        ),
-        extendBodyBehindAppBar: true,
-        resizeToAvoidBottomInset: false,
-        backgroundColor: Colors.transparent,
-        drawerEnableOpenDragGesture: false,
-        body: Row(
-          children: [
-            // miniplayer,
-            if (rotated)
-              ValueListenableBuilder(
-                valueListenable: _selectedIndex,
-                builder: (BuildContext context, int indexValue, Widget? child) {
-                  return NavigationRail(
-                    minWidth: 70.0,
-                    groupAlignment: 0.0,
-                    backgroundColor: Theme.of(context).cardColor,
-                    selectedIndex: indexValue,
+          drawerEnableOpenDragGesture: false,
+          body: Row(
+            children: [
+              // miniplayer,
+              if (rotated)
+                BlocBuilder<HomeBloc, HomeState>(
+                  bloc: _bloc,
+                  builder: (BuildContext context, HomeState homeState) {
+                    return NavigationRail(
+                      minWidth: 70.0,
+                      groupAlignment: 0.0,
+                      backgroundColor: Theme.of(context).cardColor,
+                      selectedIndex: homeState.selectedIndex,
                     onDestinationSelected: (int index) {
                       onItemTapped(index);
                     },
@@ -228,10 +233,10 @@ class _HomePageState extends State<HomePage> {
                         ),
                       ),
                     ],
-                  );
-                },
-              ),
-            Expanded(
+                    );
+                  },
+                ),
+              Expanded(
               child: GradientContainer(
                 child: Stack(
                   children: [
@@ -266,7 +271,8 @@ class _HomePageState extends State<HomePage> {
                 ),
               ),
             ),
-          ],
+            ],
+          ),
         ),
       ),
     );

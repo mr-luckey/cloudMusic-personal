@@ -6,9 +6,11 @@ import 'package:blackhole/CustomWidgets/textinput_dialog.dart';
 import 'package:blackhole/Screens/Home/saavn.dart';
 import 'package:blackhole/Screens/LocalMusic/homeScreen_song.dart';
 import 'package:blackhole/Screens/Search/search.dart';
+import 'package:blackhole/bloc/home_screen/home_screen_bloc.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:blackhole/localization/app_localizations.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:upgrader/upgrader.dart';
 
@@ -23,77 +25,87 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final ScrollController _scrollController = ScrollController();
+  late final HomeScreenBloc _bloc;
 
   @override
   void initState() {
+    _bloc = HomeScreenBloc();
     super.initState();
   }
 
   @override
   void dispose() {
+    _bloc.close();
     _scrollController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    String name =
-        Hive.box('settings').get('name', defaultValue: 'Guest') as String;
-    final double screenWidth = MediaQuery.sizeOf(context).width;
-    final bool rotated = MediaQuery.sizeOf(context).height < screenWidth;
-    return UpgradeAlert(
-      showIgnore: false,
-      showLater: false,
-      showReleaseNotes: false,
-      // upgrader: Upgrader(
-      //   durationUntilAlertAgain: const Duration(seconds: 20),
-      // ),
-      child: SafeArea(
-        child: Stack(
-          children: [
-            NestedScrollView(
-              physics: const BouncingScrollPhysics(),
-              controller: _scrollController,
-              headerSliverBuilder: (
-                BuildContext context,
-                bool innerBoxScrolled,
-              ) {
-                return <Widget>[
-                  SliverAppBar(
-                    expandedHeight: 120,
-                    backgroundColor: Colors.transparent,
-                    elevation: 0,
-                    // pinned: true,
-                    toolbarHeight: 65,
-                    // floating: true,
-                    automaticallyImplyLeading: false,
-                    flexibleSpace: LayoutBuilder(
-                      builder: (
-                        BuildContext context,
-                        BoxConstraints constraints,
-                      ) {
-                        return FlexibleSpaceBar(
-                          titlePadding: EdgeInsets.zero,
-                          // collapseMode: CollapseMode.parallax,
-                          background: GestureDetector(
-                            onTap: () async {
-                              showTextInputDialog(
-                                context: context,
-                                title: 'Name',
-                                initialText: name,
-                                keyboardType: TextInputType.name,
-                                onSubmitted:
-                                    (String value, BuildContext context) {
-                                  Hive.box('settings').put(
-                                    'name',
-                                    value.trim(),
+    return BlocBuilder<HomeScreenBloc, HomeScreenState>(
+      bloc: _bloc,
+      builder: (context, homeScreenState) {
+        String name = Hive.box('settings')
+            .get('name', defaultValue: 'Guest') as String;
+        if (homeScreenState.name.isNotEmpty) {
+          name = homeScreenState.name;
+        }
+        final double screenWidth = MediaQuery.sizeOf(context).width;
+        final bool rotated = MediaQuery.sizeOf(context).height < screenWidth;
+        return UpgradeAlert(
+          showIgnore: false,
+          showLater: false,
+          showReleaseNotes: false,
+          // upgrader: Upgrader(
+          //   durationUntilAlertAgain: const Duration(seconds: 20),
+          // ),
+          child: SafeArea(
+            child: Stack(
+              children: [
+                NestedScrollView(
+                  physics: const BouncingScrollPhysics(),
+                  controller: _scrollController,
+                  headerSliverBuilder: (
+                    BuildContext context,
+                    bool innerBoxScrolled,
+                  ) {
+                    return <Widget>[
+                      SliverAppBar(
+                        expandedHeight: 120,
+                        backgroundColor: Colors.transparent,
+                        elevation: 0,
+                        // pinned: true,
+                        toolbarHeight: 65,
+                        // floating: true,
+                        automaticallyImplyLeading: false,
+                        flexibleSpace: LayoutBuilder(
+                          builder: (
+                            BuildContext context,
+                            BoxConstraints constraints,
+                          ) {
+                            return FlexibleSpaceBar(
+                              titlePadding: EdgeInsets.zero,
+                              // collapseMode: CollapseMode.parallax,
+                              background: GestureDetector(
+                                onTap: () async {
+                                  showTextInputDialog(
+                                    context: context,
+                                    title: 'Name',
+                                    initialText: name,
+                                    keyboardType: TextInputType.name,
+                                    onSubmitted:
+                                        (String value, BuildContext context) {
+                                      Hive.box('settings').put(
+                                        'name',
+                                        value.trim(),
+                                      );
+                                      _bloc.add(
+                                        HomeScreenNameUpdated(value.trim()),
+                                      );
+                                      Navigator.pop(context);
+                                    },
                                   );
-                                  name = value.trim();
-                                  Navigator.pop(context);
                                 },
-                              );
-                              // setState(() {});
-                            },
                             child: Column(
                               mainAxisSize: MainAxisSize.min,
                               children: <Widget>[
@@ -268,6 +280,8 @@ class _HomeScreenState extends State<HomeScreen> {
           ],
         ),
       ),
+        );
+      },
     );
   }
 }
